@@ -1,0 +1,339 @@
+@import "tailwindcss";
+@import "../../../../shared/src/styles/theme.css";
+@import "../../../../shared/src/styles/typography.css";
+@import "@xterm/xterm/css/xterm.css";
+
+@source "../../../../shared/src/components/**/*.{ts,tsx}";
+@source "../../../../shared/src/hooks/**/*.{ts,tsx}";
+@source "../../../../shared/src/coretex/**/*.{ts,tsx}";
+@source "../../src/**/*.{ts,tsx}";
+
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-react-aria-components";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+@custom-variant label (& [data-label]);
+@custom-variant focus-input-within (&:has(input:focus));
+
+@utility scrollbar-hide {
+    &::-webkit-scrollbar {
+        display: none;
+        -webkit-appearance: none;
+    }
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+@utility transition-inherit-all {
+    transition-property: inherit;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
+}
+
+/* ---- Coretex glassmorphism: frosted translucent surface over the background blooms ---- */
+@utility glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--glass-border);
+}
+/* ---- Soft accent halo for active/featured elements (the "bloom" on accents) ---- */
+@utility accent-glow {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 28%, transparent), 0 10px 34px -10px var(--brand-glow);
+}
+
+html,
+body {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-variant-ligatures: contextual;
+    font-variant-ligatures: contextual;
+    -webkit-font-kerning: normal;
+    font-kerning: normal;
+}
+
+/* First-paint color-scheme so the browser canvas, scrollbars and native controls
+   render dark before the body background composites (no white flash on reload).
+   The inline bootstrap also sets style.colorScheme dynamically; this is the CSS
+   default for the dark-first state + the light override. */
+:root,
+:root:not([data-theme]),
+:root[data-theme="dark"] {
+    color-scheme: dark;
+}
+:root[data-theme="light"] {
+    color-scheme: light;
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+}
+
+.recharts-surface,
+.recharts-surface g,
+.recharts-surface path {
+    outline: none;
+}
+
+/* ---- Coretex shell theme tokens (drive the custom sidebar + app chrome) ---- */
+:root[data-theme="dark"] {
+    --app-bg: #0a0c10;
+    --sidebar-bg: #0f1218;
+    --surface: #14171d;
+    --surface-2: #1a1e25;
+    --c-border: #2a3038;
+    --c-divider: color-mix(in srgb, var(--c-text-muted) 22%, transparent);
+    --skeleton-base: color-mix(in srgb, #646a73 16%, #1a1e25);
+    --skeleton-shine: color-mix(in srgb, #9ba0a8 22%, #14171d);
+    --c-text-primary: #f5f6f8;
+    --c-text-secondary: #9ba0a8;
+    --c-text-muted: #646a73;
+    --brand: #ef4242;
+    --brand-hover: #d02f2f;
+    --c-success: #17b26a;
+    --c-warning: #f79009;
+    --c-error: #f04438;
+    --sidebar-active-bg: #242a33;
+    --sidebar-active-fg: #f5f6f8;
+}
+
+:root[data-theme="light"] {
+    --app-bg: #ffffff;
+    --sidebar-bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #f2f4f7;
+    --c-border: #d0d5dd;
+    --c-divider: color-mix(in srgb, var(--c-text-muted) 28%, transparent);
+    --skeleton-base: color-mix(in srgb, #98a2b3 18%, #f2f4f7);
+    --skeleton-shine: color-mix(in srgb, #d0d5dd 55%, #ffffff);
+    --c-text-primary: #101828;
+    --c-text-secondary: #475467;
+    --c-text-muted: #98a2b3;
+    --brand: #ef4242;
+    --brand-hover: #d02f2f;
+    --c-success: #079455;
+    --c-warning: #dc6803;
+    --c-error: #d92d20;
+    --sidebar-active-bg: #eaecf0;
+    --sidebar-active-fg: #101828;
+}
+
+/* Default before the theme provider mounts (dark-first). */
+:root:not([data-theme]) {
+    --app-bg: #0a0c10;
+    --sidebar-bg: #0f1218;
+    --surface: #14171d;
+    --surface-2: #1a1e25;
+    --c-border: #2a3038;
+    --c-divider: color-mix(in srgb, #646a73 22%, transparent);
+    --skeleton-base: color-mix(in srgb, #646a73 16%, #1a1e25);
+    --skeleton-shine: color-mix(in srgb, #9ba0a8 22%, #14171d);
+    --c-text-primary: #f5f6f8;
+    --c-text-secondary: #9ba0a8;
+    --c-text-muted: #646a73;
+    --brand: #ef4242;
+    --brand-hover: #d02f2f;
+    --sidebar-active-bg: #242a33;
+    --sidebar-active-fg: #f5f6f8;
+}
+
+/* ---- Custom themed scrollbars (replace the default chunky Windows scrollbars) ---- */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-border) transparent;
+}
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+    background-color: var(--c-border);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background-color: var(--c-text-muted);
+    background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* ---- Make interactive elements feel clickable ---- */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+summary,
+select:not(:disabled),
+[role="tab"],
+[role="option"] {
+    cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+    cursor: not-allowed;
+}
+
+/* ---- Brand-colored focus + native accents (kills the default browser blue) ---- */
+:root {
+    accent-color: var(--brand);
+    caret-color: var(--brand);
+}
+::selection {
+    background: color-mix(in srgb, var(--brand) 30%, transparent);
+}
+:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--brand) 65%, transparent);
+    outline-offset: 2px;
+}
+/* Untitled UI components manage their own (brand-red) focus rings; don't double up. */
+:where(input, textarea, select, [data-rac]):focus-visible {
+    outline: none;
+}
+
+/* ============================================================
+   Coretex visual language — accent-forward glassmorphism + blooms.
+   The active nav/chip accent (brand) now carries through the whole shell,
+   sitting on a softly-glowing field of gaussian color blooms behind frosted
+   translucent surfaces. Tokens override the base theme; appended last to win.
+   ============================================================ */
+:root[data-theme="dark"],
+:root:not([data-theme]) {
+    --brand-2: #f43f5e; /* warm secondary bloom hue (rose) — stays on-brand, no blue */
+    --glass-bg: rgba(20, 23, 29, 0.62);
+    --glass-border: rgba(255, 255, 255, 0.07);
+    --brand-glow: rgba(239, 66, 66, 0.42);
+    /* Active state adopts the accent the user loves (the Agents/Terminals chip), translucent. */
+    --sidebar-active-bg: color-mix(in srgb, var(--brand) 20%, transparent);
+    --sidebar-bg: rgba(15, 18, 24, 0.64);
+}
+:root[data-theme="light"] {
+    --brand-2: #8b5cf6;
+    --glass-bg: rgba(255, 255, 255, 0.66);
+    --glass-border: rgba(16, 24, 40, 0.06);
+    --brand-glow: rgba(239, 66, 66, 0.22);
+    --sidebar-active-bg: color-mix(in srgb, var(--brand) 12%, transparent);
+    --sidebar-bg: rgba(245, 246, 248, 0.72);
+}
+
+/* Background bloom field — fixed, soft radial glows behind the whole app. */
+:root[data-theme="dark"] body,
+:root:not([data-theme]) body {
+    background-color: var(--app-bg);
+    background-image:
+        radial-gradient(58rem 58rem at 4% -14%, rgba(239, 66, 66, 0.22), transparent 60%),
+        radial-gradient(46rem 46rem at 106% -6%, rgba(244, 63, 94, 0.14), transparent 58%),
+        radial-gradient(64rem 44rem at 50% 118%, rgba(249, 115, 22, 0.08), transparent 62%);
+    background-attachment: fixed;
+}
+:root[data-theme="light"] body {
+    background-color: var(--app-bg);
+    background-image:
+        radial-gradient(58rem 58rem at 4% -14%, rgba(239, 66, 66, 0.08), transparent 60%),
+        radial-gradient(46rem 46rem at 106% -6%, rgba(244, 63, 94, 0.05), transparent 58%);
+    background-attachment: fixed;
+}
+
+/* Pane animations off (Appearance setting): drop CSS transitions but keep keyframe
+   animations like loading spinners running. */
+.no-pane-animations *,
+.no-pane-animations *::before,
+.no-pane-animations *::after {
+    transition-duration: 0.001s !important;
+}
+
+/* Soft skeleton shimmer — muted surface tones, never harsh white. */
+.coretex-skeleton {
+    background: linear-gradient(
+        105deg,
+        var(--skeleton-base) 0%,
+        var(--skeleton-base) 38%,
+        var(--skeleton-shine) 50%,
+        var(--skeleton-base) 62%,
+        var(--skeleton-base) 100%
+    );
+    background-size: 220% 100%;
+    animation: coretex-skeleton-shimmer 1.55s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .coretex-skeleton {
+        animation: none;
+        background: var(--skeleton-base);
+    }
+}
+@keyframes coretex-skeleton-shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
+/* ============================================================
+   Appearance effects toggled on <html> by settings-effects.tsx.
+   settings-effects publishes --blur-radius inline when acrylic tabs are on;
+   this default keeps the var defined for any host that reads it before the
+   effect runs (and gives a sensible frost when the setting has no radius).
+   ============================================================ */
+:root {
+    --blur-radius: 12px;
+}
+
+/* Acrylic tabs (Appearance > tabs.acrylic): frost the terminal-dock tab strip so
+   the bloom field shows through. The strip is the toolbar row in terminal-dock.tsx
+   (relative z-30 flex row with the per-terminal tab buttons); it currently renders
+   with NO className/data hook, so we target the documented selectors below.
+   TODO(terminal-dock): give the tab-strip row a stable hook (e.g. data-tab-strip
+   or className="tab-strip") so this frost lands precisely instead of relying on the
+   .acrylic-tabs body fallback. Until then both the explicit selectors and the body
+   fallback are kept so the effect is visible either way. */
+.acrylic-tabs [data-tab-strip],
+.acrylic-tabs .tab-strip {
+    backdrop-filter: blur(var(--blur-radius)) saturate(140%);
+    -webkit-backdrop-filter: blur(var(--blur-radius)) saturate(140%);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+/* Documented fallback: with no tab-strip hook yet, lift the whole shell onto the
+   translucent surface so acrylic tabs read as frosted over the blooms. */
+.acrylic-tabs body {
+    background-color: color-mix(in srgb, var(--app-bg) 88%, transparent);
+}
+
+/* Acrylic when unfocused — slightly softer shell when the window loses focus. */
+.acrylic-unfocused body:not(:focus-within) {
+    backdrop-filter: blur(calc(var(--blur-radius) * 0.5));
+    -webkit-backdrop-filter: blur(calc(var(--blur-radius) * 0.5));
+}
+
+/* Software rendering / partial-swapchain compat flags (mostly Electron launch-time;
+   these keep GPU-heavy CSS effects subdued when software mode is on). */
+.software-rendering * {
+    transform: translateZ(0);
+}
+.disable-partial-swapchain [data-surface],
+.disable-partial-swapchain .glass {
+    will-change: auto;
+}
+
+/* Admin shield (Appearance > window.adminShield): elevated-process marker.
+   A subtle brand-tinted inset top border so an admin/elevated window is
+   visually flagged without a heavy chrome. Tokens only — stays on-brand red. */
+.admin-shield {
+    box-shadow: inset 0 2px 0 0 color-mix(in srgb, var(--brand) 60%, transparent);
+}

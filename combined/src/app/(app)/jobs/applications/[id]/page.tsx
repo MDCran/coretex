@@ -1,0 +1,6 @@
+import { redirect } from "next/navigation";
+
+export default async function RedirectById({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    redirect(`/career/applications/${id}`);
+}

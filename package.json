@@ -1,0 +1,35 @@
+{
+    "name": "coretex",
+    "version": "0.0.0",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "shared",
+        "coretex"
+    ],
+    "scripts": {
+        "predev":         "npm run db:ensure -w coretex && npm run build -w coretex",
+        "dev":            "concurrently --names \"brain,web,desktop\" --prefix-colors \"yellow,cyan,magenta\" \"npm run dev -w coretex\" \"npm run dev -w apps/web\" \"npm run dev -w apps/desktop\"",
+        "dev:relays":     "concurrently --names \"web,desktop\" --prefix-colors \"cyan,magenta\" \"npm run dev -w apps/web\" \"npm run dev -w apps/desktop\"",
+        "dev:webbrain":   "concurrently --names \"brain,web\" --prefix-colors \"yellow,cyan\" \"npm run dev:tsx -w coretex\" \"npm run dev -w apps/web\"",
+        "predev:web":     "npm run build -w coretex",
+        "dev:web":        "npm run dev -w apps/web",
+        "predev:desktop": "npm run db:ensure -w coretex",
+        "dev:desktop":    "concurrently --names \"brain,desktop\" --prefix-colors \"yellow,magenta\" \"npm run dev -w coretex\" \"npm run dev -w apps/desktop\"",
+        "desktop:live":   "npm run dev:desktop",
+        "dev:brain":      "npm run dev -w coretex",
+        "build":          "npm run build -w coretex && npm run build -w apps/web && npm run build -w apps/desktop",
+        "build:web":      "npm run build -w coretex && npm run build -w apps/web",
+        "build:desktop":  "npm run electron:build -w apps/desktop",
+        "desktop:installer": "npm run release:prepare && npm run electron:build -w apps/desktop",
+        "desktop:pack":      "npm run electron:pack -w apps/desktop",
+        "release:prepare":   "node scripts/release-contract.mjs prepare",
+        "release:verify":    "node scripts/release-contract.mjs verify",
+        "smoke:release":     "node scripts/release-acceptance-smoke.mjs",
+        "check:brain":    "npm run check -w coretex"
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.2",
+        "monaco-editor": "0.53.0"
+    }
+}

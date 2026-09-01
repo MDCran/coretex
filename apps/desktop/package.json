@@ -1,0 +1,158 @@
+{
+    "name": "@coretex/desktop",
+    "version": "0.1.0",
+    "description": "Coretex local AI agent workspace",
+    "author": "Coretex",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/MDCran/coretex.git"
+    },
+    "type": "module",
+    "main": "dist-electron/main.js",
+    "private": true,
+    "scripts": {
+        "predev": "npm run build -w @repo/coretex",
+        "dev": "vite",
+        "prebuild": "npm run build -w @repo/coretex",
+        "build": "tsc -b && vite build",
+        "smoke:security": "tsx scripts/security-smoke.ts",
+        "smoke:workouts-ui": "tsx scripts/workouts-ui-smoke.ts",
+        "smoke:update-contract": "tsx scripts/update-contract-smoke.ts",
+        "preview": "vite preview",
+        "preelectron:dev": "npm run build -w @repo/coretex",
+        "electron:dev": "vite",
+        "preelectron:build": "npm run build -w @repo/coretex",
+        "electron:build": "tsc -b && vite build && electron-builder --win nsis --publish never",
+        "preelectron:pack": "npm run build -w @repo/coretex",
+        "electron:pack": "tsc -b && vite build && electron-builder --dir --win",
+        "electron:preview": "electron ."
+    },
+    "build": {
+        "appId": "com.coretex.app",
+        "productName": "Coretex",
+        "npmRebuild": false,
+        "directories": {
+            "output": "release"
+        },
+        "files": [
+            "dist/**/*",
+            "dist-electron/**/*"
+        ],
+        "extraResources": [
+            {
+                "from": "../../coretex/node_modules/.prisma",
+                "to": "node_modules/.prisma",
+                "filter": [
+                    "**/*"
+                ]
+            },
+            {
+                "from": "../../THIRD-PARTY-NOTICES.md",
+                "to": "THIRD-PARTY-NOTICES.md"
+            }
+        ],
+        "asarUnpack": [
+            "**/node_modules/.prisma/**/*",
+            "**/node_modules/@prisma/client/**/*",
+            "**/node_modules/node-pty/**/*",
+            "**/node_modules/ffmpeg-static/**/*"
+        ],
+        "win": {
+            "icon": "public/coretex-icon.png",
+            "target": "nsis",
+            "artifactName": "Coretex-Setup-${version}-${arch}.${ext}"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "Coretex",
+            "runAfterFinish": true,
+            "deleteAppDataOnUninstall": false
+        },
+        "mac": {
+            "icon": "public/coretex-icon.png",
+            "target": [
+                "dmg"
+            ]
+        },
+        "linux": {
+            "icon": "public/coretex-icon.png",
+            "target": [
+                "AppImage",
+                "deb"
+            ]
+        },
+        "publish": {
+            "provider": "github",
+            "owner": "MDCran",
+            "repo": "coretex",
+            "channel": "${channel}",
+            "releaseType": "release"
+        },
+        "releaseInfo": {
+            "releaseNotesFile": "build/release-notes.md"
+        }
+    },
+    "dependencies": {
+        "@monaco-editor/react": "^4.7.0",
+        "@react-aria/utils": "^3.34.1",
+        "@react-stately/utils": "^3.12.1",
+        "@react-types/overlays": "^3.10.0",
+        "@repo/coretex": "*",
+        "@tailwindcss/typography": "^0.5.19",
+        "@tailwindcss/vite": "^4.2.2",
+        "@teispace/next-themes": "^2.0.4",
+        "@tiptap/core": "^3.26.1",
+        "@tiptap/extension-image": "^3.26.1",
+        "@tiptap/extension-placeholder": "^3.26.1",
+        "@tiptap/extension-text-align": "^3.26.1",
+        "@tiptap/extension-text-style": "^3.26.1",
+        "@tiptap/pm": "^3.28.0",
+        "@tiptap/react": "^3.26.1",
+        "@tiptap/starter-kit": "^3.26.1",
+        "@untitledui/file-icons": "^0.0.9",
+        "@untitledui/icons": "^0.0.22",
+        "date-fns": "^4.4.0",
+        "electron-updater": "^6.8.9",
+        "embla-carousel-react": "^8.6.0",
+        "input-otp": "^1.4.2",
+        "monaco-editor": "0.53.0",
+        "motion": "^12.38.0",
+        "qr-code-styling": "^1.9.2",
+        "react": "^19.2.4",
+        "react-aria": "^3.49.0",
+        "react-aria-components": "^1.18.0",
+        "react-dom": "^19.2.4",
+        "react-hook-form": "^7.79.0",
+        "react-hotkeys-hook": "^5.2.4",
+        "react-router": "^7.13.0",
+        "recharts": "^3.8.0",
+        "tailwind-merge": "^3.6.0",
+        "tailwindcss": "^4.2.2",
+        "tailwindcss-animate": "^1.0.7",
+        "tailwindcss-react-aria-components": "^2.0.1"
+    },
+    "devDependencies": {
+        "@electron-toolkit/utils": "^4.0.0",
+        "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+        "@types/node": "^25.5.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@vitejs/plugin-react": "^6.0.1",
+        "electron": "^42.4.0",
+        "electron-builder": "^26.15.3",
+        "globals": "^16.5.0",
+        "prettier": "^3.8.1",
+        "prettier-plugin-tailwindcss": "^0.7.2",
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.53.1",
+        "vite": "^8.0.2",
+        "vite-plugin-electron": "^1.0.4",
+        "vite-plugin-electron-renderer": "^1.0.0"
+    },
+    "optionalDependencies": {
+        "@rolldown/binding-linux-x64-gnu": "1.0.3"
+    }
+}

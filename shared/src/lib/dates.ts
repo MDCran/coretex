@@ -1,0 +1,1 @@
+export const formatDate = (x: any) => String(x); export const formatDateShort = (x: any) => String(x); export const formatDateTime = (x: any) => String(x); export const formatRelative = (x: any) => String(x);

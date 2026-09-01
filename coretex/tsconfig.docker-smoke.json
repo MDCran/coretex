@@ -1,0 +1,18 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "rootDir": "..",
+        "baseUrl": "..",
+        "paths": {
+            "@repo/coretex/types": ["coretex/src/types.ts"]
+        }
+    },
+    "include": [
+        "scripts/docker-acceptance-smoke.ts",
+        "src/docker/service.ts",
+        "src/types.ts",
+        "../shared/src/coretex/docker-operation-state.ts",
+        "../shared/src/coretex/views/docker-action-state.ts"
+    ]
+}

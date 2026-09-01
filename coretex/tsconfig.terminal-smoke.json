@@ -1,0 +1,15 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "rootDir": ".."
+    },
+    "include": [
+        "scripts/terminal-regression-smoke.ts",
+        "src/terminal/manager.ts",
+        "src/terminal/buddy-exec.ts",
+        "src/terminal/buddy-probe.ts",
+        "src/terminal/private-output.ts",
+        "../shared/src/coretex/terminal/terminal-layout.ts"
+    ]
+}

@@ -1,0 +1,238 @@
+name: Release Windows desktop
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      stream:
+        description: Release stream to validate or build
+        required: true
+        default: nightly
+        type: choice
+        options:
+          - stable
+          - beta
+          - nightly
+      version:
+        description: Optional explicit nightly SemVer for a non-publishing validation build
+        required: false
+        type: string
+      publish:
+        description: Publish a generated nightly prerelease (manual runs are dry by default)
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coretex-windows-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      stream: ${{ steps.release.outputs.stream }}
+      channel: ${{ steps.release.outputs.channel }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+      publish: ${{ steps.release.outputs.publish }}
+      tag: ${{ steps.release.outputs.tag }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Test the release contract without publishing
+        run: npm run smoke:release
+
+      - name: Derive version, channel, and changelog release notes
+        id: release
+        shell: pwsh
+        env:
+          RELEASE_EVENT: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_STREAM: ${{ inputs.stream }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_PUBLISH: ${{ inputs.publish }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: node scripts/release-contract.mjs prepare --github-output "$env:GITHUB_OUTPUT"
+
+      - name: Validate Windows signing credentials
+        shell: pwsh
+        env:
+          WILL_PUBLISH: ${{ steps.release.outputs.publish }}
+          WINDOWS_CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          WINDOWS_CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+        run: |
+          $hasCertificate = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_CSC_LINK)
+          $hasPassword = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_CSC_KEY_PASSWORD)
+          if ($hasCertificate -xor $hasPassword) {
+            throw 'Configure both WINDOWS_CSC_LINK and WINDOWS_CSC_KEY_PASSWORD, or neither.'
+          }
+          if ($env:WILL_PUBLISH -eq 'true' -and -not ($hasCertificate -and $hasPassword)) {
+            throw 'Publishing needs both Windows signing secrets; use a dry run for an unsigned local installer.'
+          }
+
+      - name: Build release assets without publishing
+        run: npm run electron:build -w apps/desktop
+        env:
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+
+      - name: Require a valid Authenticode signature before publication
+        if: steps.release.outputs.publish == 'true'
+        shell: pwsh
+        run: |
+          $installer = 'apps/desktop/release/Coretex-Setup-${{ steps.release.outputs.version }}-x64.exe'
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer
+          if ($signature.Status -ne 'Valid') {
+            throw "The publishable installer signature is $($signature.Status), not Valid."
+          }
+
+      - name: Verify updater artifacts and channel metadata
+        shell: pwsh
+        run: >-
+          node scripts/release-contract.mjs verify
+          --version "${{ steps.release.outputs.version }}"
+          --channel "${{ steps.release.outputs.channel }}"
+
+      - name: Keep the verified release bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Coretex-Windows-${{ steps.release.outputs.version }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            apps/desktop/release/Coretex-Setup-${{ steps.release.outputs.version }}-x64.exe
+            apps/desktop/release/Coretex-Setup-${{ steps.release.outputs.version }}-x64.exe.blockmap
+            apps/desktop/release/${{ steps.release.outputs.channel }}.yml
+            apps/desktop/build/release-notes.md
+
+  publish:
+    needs: build
+    if: needs.build.outputs.publish == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out the exact source commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Download the verified release bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: Coretex-Windows-${{ needs.build.outputs.version }}
+          path: apps/desktop
+
+      - name: Verify the transferred bundle again
+        shell: pwsh
+        run: >-
+          node scripts/release-contract.mjs verify
+          --version "${{ needs.build.outputs.version }}"
+          --channel "${{ needs.build.outputs.channel }}"
+
+      - name: Require a strictly newer published-stream version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $releasesFile = Join-Path $env:RUNNER_TEMP 'published-releases.json'
+          gh api --paginate --slurp "repos/${{ github.repository }}/releases?per_page=100" > $releasesFile
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Could not read published releases; refusing to publish without a monotonicity check.'
+          }
+          node scripts/release-contract.mjs guard-remote `
+            --version '${{ needs.build.outputs.version }}' `
+            --releases $releasesFile
+
+      - name: Reject an existing release or generated nightly tag
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = '${{ needs.build.outputs.tag }}'
+          $null = gh release view $tag --repo '${{ github.repository }}' 2>$null
+          $releaseLookupExit = $LASTEXITCODE
+          $global:LASTEXITCODE = 0
+          if ($releaseLookupExit -eq 0) {
+            throw "Release $tag already exists; refusing to replace verified assets."
+          }
+          if ('${{ needs.build.outputs.stream }}' -eq 'nightly') {
+            $null = gh api "repos/${{ github.repository }}/git/ref/tags/$tag" 2>$null
+            $tagLookupExit = $LASTEXITCODE
+            $global:LASTEXITCODE = 0
+            if ($tagLookupExit -eq 0) {
+              throw "Generated nightly tag $tag already exists; refusing ambiguous source provenance."
+            }
+          }
+
+      - name: Create a draft release from the verified files
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = '${{ needs.build.outputs.version }}'
+          $tag = '${{ needs.build.outputs.tag }}'
+          $installer = "apps/desktop/release/Coretex-Setup-$version-x64.exe"
+          $arguments = @(
+            $tag,
+            $installer,
+            "$installer.blockmap",
+            "apps/desktop/release/${{ needs.build.outputs.channel }}.yml",
+            '--repo', '${{ github.repository }}',
+            '--target', '${{ github.sha }}',
+            '--title', "Coretex $version",
+            '--notes-file', 'apps/desktop/build/release-notes.md',
+            '--draft'
+          )
+          if ('${{ needs.build.outputs.prerelease }}' -eq 'true') {
+            $arguments += '--prerelease'
+          }
+          gh release create @arguments
+
+      - name: Publish the complete verified draft
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $arguments = @(
+            '${{ needs.build.outputs.tag }}',
+            '--repo', '${{ github.repository }}',
+            '--draft=false'
+          )
+          if ('${{ needs.build.outputs.prerelease }}' -eq 'true') {
+            $arguments += '--prerelease'
+          } else {
+            $arguments += '--latest'
+          }
+          gh release edit @arguments

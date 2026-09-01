@@ -1,0 +1,3808 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Core: auth, account, settings
+// ============================================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String?  @unique
+  passwordHash String
+  name         String?
+  avatarKey    String? // S3 object key
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile       UserProfile?
+  settings      Settings?
+  spotify       SpotifyConnection?
+  genius        GeniusConnection?
+  alpaca        AlpacaConnection?
+  plaidItems    PlaidItem[]
+  plaidAccounts PlaidAccount[]
+
+  notifications  Notification[]
+  todos          TodoItem[]
+  aiCalls        AiCall[]
+  insights       Insight[]
+  scoreSnapshots ScoreSnapshot[]
+
+  calendarEvents  CalendarEvent[]
+  eventCategories EventCategory[]
+
+  companies             Company[]
+  jobPhases             JobPhase[]
+  jobApplications       JobApplication[]
+  jobDocuments          JobDocument[]
+  jobContacts           JobContact[]
+  jobSearchLocations    JobSearchLocation[]
+  jobSearchProfile      JobSearchProfile?
+  suggestedCompanies    SuggestedCompany[]
+  jobLeads              JobLead[]
+  jobSearchRuns         JobSearchRun[]
+  deletedSuggestedRoles DeletedSuggestedRole[]
+  interviewRounds       InterviewRound[]
+  interviewQuestions    InterviewQuestion[]
+  prepChecklistItems    PrepChecklistItem[]
+  starStories           StarStory[]
+  offers                Offer[]
+  negotiationSteps      NegotiationStep[]
+  networkingOutreach    NetworkingOutreach[]
+  careerTargets         CareerTarget[]
+  careerSkills          CareerSkill[]
+  careerCertifications  CareerCertification[]
+  careerProjects        CareerProject[]
+  careerSalaryEntries   CareerSalaryEntry[]
+  careerGoals           CareerGoal[]
+  careerWeeklyReviews   CareerWeeklyReview[]
+  careerJournalEntries  CareerJournalEntry[]
+  careerMentors         CareerMentor[]
+  careerReviews         CareerReview[]
+  resumes               Resume[]
+
+  bodyMetrics          BodyMetric[]
+  vitalReadings        VitalReading[]
+  nutritionDays        NutritionDay[]
+  foodProducts         FoodProduct[]
+  nutritionGoal        NutritionGoal?
+  savedMeals           SavedMeal[]
+  waterLogs            WaterLog[]
+  sleepEntries         SleepEntry[]
+  habits               Habit[]
+  journalEntries       JournalEntry[]
+  medicalRecords       MedicalRecord[]
+  progressPhotos       ProgressPhoto[]
+  substanceLogs        SubstanceLog[]
+  customSubstanceTypes CustomSubstanceType[]
+  sobrietyCounters     SobrietyCounter[]
+  providers            Provider[]
+  doctors              Doctor[]
+
+  peptides             Peptide[]
+  medications          Medication[]
+  supplements          Supplement[]
+  therapeuticSchedules TherapeuticSchedule[]
+  therapeuticDoses     TherapeuticDose[]
+  therapeuticLogs      TherapeuticLog[]
+
+  exercises        Exercise[]
+  workouts         Workout[]
+  templates        Template[]
+  personalRecords  PersonalRecord[]
+  trainingCycles   TrainingCycle[]
+  bodyMeasurements BodyMeasurement[]
+  workoutSchedules WorkoutSchedule[]
+  todoRoutines     TodoRoutine[]
+
+  finAccounts       FinAccount[]
+  creditCards       CreditCard[]
+  brokerageAccounts BrokerageAccount[]
+  finStatements     FinStatement[]
+  finTransactions   FinTransaction[]
+  budgetCategories  BudgetCategory[]
+  finSubscriptions  FinSubscription[]
+  institutions      Institution[]
+  financialPlans    FinancialPlan[]
+  incomeStreams     IncomeStream[]
+  incomeEntries     IncomeEntry[]
+  netWorthSnapshots NetWorthSnapshot[]
+  taxDocuments      TaxDocument[]
+  debts             Debt[]
+  creditScores      CreditScoreEntry[]
+  financialGoals    FinancialGoal[]
+
+  socialContacts     SocialContact[]
+  socialEvents       SocialEvent[]
+  socialBatteries    SocialBattery[]
+  socialTags         SocialTag[]
+  outreachDrafts     OutreachDraft[]
+  recurringReminders RecurringReminder[]
+
+  learningCourses      LearningCourse[]
+  learningGoals        LearningGoal[]
+  learningSkills       LearningSkill[]
+  learningResources    LearningResource[]
+  flashcards           Flashcard[]
+  quizzes              Quiz[]
+  learningNotes        LearningNote[]
+  learningSessions     LearningSession[]
+  learningPlanEntries  LearningPlanEntry[]
+  learningAchievements LearningAchievement[]
+  learningClasses      LearningClass[]
+  videoGroups          VideoGroup[]
+  archiveVideos        ArchiveVideo[]
+  learningShares       LearningShare[]
+
+  focusSprints     FocusSprint[]
+  weeklyPriorities WeeklyPriority[]
+  rewardGoals      RewardGoal[]
+  goalPeriods      GoalPeriod[]
+}
+
+enum UnitSystem {
+  METRIC
+  IMPERIAL
+}
+
+model UserProfile {
+  id                   String    @id @default(cuid())
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId               String    @unique
+  gender               String?
+  birthdate            DateTime?
+  heightCm             Float?
+  activityLevel        String?
+  dietGoal             String?
+  targetWeeklyChangeKg Float?
+  goalWeightKg         Float?
+  goalBodyFatPct       Float?
+  goalTargetDate       DateTime?
+  waterGoalMl          Int?      @default(2500)
+  phone                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+/// Alpaca brokerage link (READ-ONLY portfolio view; no trading actions).
+model AlpacaConnection {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String   @unique
+  activePaper    Boolean  @default(true)
+  paperApiKey    String?
+  paperApiSecret String?
+  liveApiKey     String?
+  liveApiSecret  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+/// Plaid bank link — one row per connected institution (Item).
+model PlaidItem {
+  id                 String         @id @default(cuid())
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String
+  itemId             String         @unique // Plaid item_id
+  accessToken        String
+  institutionId      String? // Plaid institution_id
+  institutionName    String?
+  transactionsCursor String?
+  lastSyncedAt       DateTime?
+  lastAccountsSyncAt DateTime?
+  status             String         @default("good")
+  errorCode          String?
+  accounts           PlaidAccount[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([userId])
+}
+
+/// Maps a Plaid account to a LifeOS FinAccount or CreditCard.
+model PlaidAccount {
+  id                String      @id @default(cuid())
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  plaidItem         PlaidItem   @relation(fields: [plaidItemId], references: [id], onDelete: Cascade)
+  plaidItemId       String
+  plaidAccountId    String      @unique // Plaid account_id
+  name              String
+  officialName      String?
+  mask              String?
+  type              String // depository | credit | loan | investment | brokerage | other
+  subtype           String?
+  finAccount        FinAccount? @relation(fields: [finAccountId], references: [id], onDelete: SetNull)
+  finAccountId      String?     @unique
+  creditCard        CreditCard? @relation(fields: [creditCardId], references: [id], onDelete: SetNull)
+  creditCardId      String?     @unique
+  balanceCurrent    Decimal?    @db.Decimal(14, 2)
+  balanceAvailable  Decimal?    @db.Decimal(14, 2)
+  balanceLimit      Decimal?    @db.Decimal(14, 2)
+  lastBalanceSyncAt DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([plaidItemId])
+}
+
+/// Spotify account link (OAuth tokens for playback control + playlists).
+model SpotifyConnection {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String   @unique
+  spotifyUserId String
+  displayName   String?
+  accessToken   String
+  refreshToken  String
+  expiresAt     DateTime
+  scope         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+/// Genius account link (OAuth token for lyrics search; app client-credentials also used).
+model GeniusConnection {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String   @unique
+  geniusUserId String?
+  displayName  String?
+  accessToken  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Settings {
+  id                     String     @id @default(cuid())
+  user                   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                 String     @unique
+  unitSystem             UnitSystem @default(IMPERIAL)
+  aiEnabled              Boolean    @default(false)
+  aiModel                String?
+  aiBudgetUsd            Decimal?   @db.Decimal(8, 2)
+  aiMonthSpend           Decimal    @default(0) @db.Decimal(8, 2)
+  // Refined AI spend caps (enforced at call time). Null = unlimited.
+  aiMonthlyLimitUsd      Decimal?   @db.Decimal(8, 2)
+  aiPerSearchLimitUsd    Decimal?   @db.Decimal(8, 2)
+  // Appearance prefs (cross-device persistence; mirrored to localStorage for no-FOUC).
+  accent                 String?
+  moduleAccents          Json?
+  dateFormat             String?
+  timeFormat             String?
+  currency               String?
+  coachStyle             String?
+  sidebarConfig          Json?
+  scoreWeights           Json?
+  lastSubscriptionScanAt DateTime? // monthly auto-run marker for AI subscription detection
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+}
+
+// ============================================================
+// Cross-cutting: notifications, todos, AI telemetry, insights
+// ============================================================
+
+enum NotificationKind {
+  SYSTEM
+  AI_SUGGESTION
+  ALERT
+  TODO_DUE
+  INTEGRATION
+}
+
+enum NotificationSeverity {
+  INFO
+  WARN
+  DANGER
+  SUCCESS
+}
+
+model Notification {
+  id        String               @id @default(cuid())
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  kind      NotificationKind     @default(SYSTEM)
+  severity  NotificationSeverity @default(INFO)
+  title     String
+  body      String?
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime             @default(now())
+
+  @@index([userId, readAt])
+}
+
+enum TodoSource {
+  USER
+  AI
+  INTEGRATION
+}
+
+enum TodoStatus {
+  PLANNED
+  IN_PROGRESS
+  DRIPPED
+  DONE
+  SKIPPED
+}
+
+enum TodoCadence {
+  DAILY
+  EVERY_N_DAYS
+  WEEKLY_DOW
+  YEARLY
+}
+
+/// Coarse part-of-day bucket for a todo. Used as a tag/badge and to "float"
+/// untimed todos into a zone band on the calendar (Morning 6–12, Afternoon
+/// 12–17, Evening 17–21, Night 21–24).
+enum TimeOfDay {
+  MORNING
+  AFTERNOON
+  EVENING
+  NIGHT
+}
+
+/// Priority flag — drives sort order + a color-coded left border on cards.
+enum TodoPriority {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+/// Energy-level tag for energy-aware scheduling.
+enum TodoEnergy {
+  DEEP_WORK
+  QUICK
+  COLLABORATIVE
+}
+
+/// Recurring todo definition — materialized into one TodoItem per due day.
+model TodoRoutine {
+  id              String       @id @default(cuid())
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  title           String
+  body            String?
+  cadence         TodoCadence  @default(DAILY)
+  intervalN       Int? // EVERY_N_DAYS
+  daysOfWeek      String[]     @default([]) // MON..SUN for WEEKLY_DOW
+  yearlyMonth     Int? // 1-12 for YEARLY
+  yearlyDay       Int? // 1-31 for YEARLY
+  active          Boolean      @default(true)
+  endDate         DateTime?    @db.Date // recurring stop date (inclusive); nothing materialized after
+  anchorDate      DateTime?    @db.Date // EVERY_N_DAYS start anchor (defaults to createdAt day)
+  // Scheduling + classification defaults copied onto each materialized TodoItem.
+  timeOfDay       TimeOfDay? // part-of-day bucket
+  startTime       String? // "HH:MM" 24h wall-clock; null = no specific time
+  durationMinutes Int? // estimated minutes to complete (block sizing)
+  priority        TodoPriority @default(NONE)
+  category        String? // color-coded category
+  energy          TodoEnergy?
+  tags            String[]     @default([])
+  items           TodoItem[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([userId, active])
+}
+
+model TodoItem {
+  id                String           @id @default(cuid())
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  title             String
+  body              String?
+  source            TodoSource       @default(USER)
+  status            TodoStatus       @default(PLANNED)
+  date              DateTime?        @db.Date // the day this todo belongs to (per-day model)
+  // Rich scheduling metadata (all optional, backward compatible).
+  timeOfDay         TimeOfDay? // part-of-day bucket — tag/badge + zone-band placement
+  startTime         String? // "HH:MM" 24h wall-clock for calendar block position; null = no specific time
+  durationMinutes   Int? // estimated minutes to complete — drives block height + daily capacity
+  // Classification + organization.
+  priority          TodoPriority     @default(NONE)
+  tags              String[]         @default([]) // freeform/preset labels (e.g. CoreMarketing, Admin)
+  category          String? // color-coded category (Personal/Work/Finance/Health/...)
+  energy            TodoEnergy? // energy-aware scheduling tag
+  sortOrder         Int              @default(0) // manual ordering within a status column
+  links             String[]         @default([]) // pasted reference URLs
+  projectRef        String? // linked project/client label
+  projectUrl        String? // linked project/client URL
+  rolledOver        Boolean          @default(false) // carried over from a previous day
+  // Dependency: this todo is blocked until `blockedBy` is done.
+  blockedBy         TodoItem?        @relation("TodoBlockedBy", fields: [blockedById], references: [id], onDelete: SetNull)
+  blockedById       String?
+  blockers          TodoItem[]       @relation("TodoBlockedBy")
+  subtasks          TodoSubtask[]
+  routine           TodoRoutine?     @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  routineId         String?
+  plannedAt         DateTime?
+  dueAt             DateTime?
+  completedAt       DateTime?
+  hindrance         String?
+  calendarEvent     CalendarEvent?   @relation(fields: [calendarEventId], references: [id], onDelete: SetNull)
+  calendarEventId   String?
+  therapeuticDose   TherapeuticDose? @relation(fields: [therapeuticDoseId], references: [id], onDelete: SetNull)
+  therapeuticDoseId String?          @unique
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([routineId, date])
+  @@index([userId, status])
+  @@index([userId, date])
+  @@index([blockedById])
+}
+
+/// A checklist subtask under a TodoItem.
+model TodoSubtask {
+  id        String   @id @default(cuid())
+  todo      TodoItem @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  todoId    String
+  title     String
+  done      Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([todoId])
+}
+
+model AiCall {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  provider     String
+  model        String
+  purpose      String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  costUsd      Decimal  @default(0) @db.Decimal(10, 6)
+  latencyMs    Int?
+  errored      Boolean  @default(false)
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum LifeDomain {
+  HEALTH
+  CAREER
+  FINANCIAL
+  LEARNING
+  SOCIAL
+  OVERALL
+}
+
+model Insight {
+  id        String     @id @default(cuid())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  domain    LifeDomain
+  type      String?
+  message   String
+  createdAt DateTime   @default(now())
+
+  @@index([userId, domain])
+}
+
+model ScoreSnapshot {
+  id           String     @id @default(cuid())
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  domain       LifeDomain
+  score        Float
+  calculatedOn DateTime   @db.Date
+  createdAt    DateTime   @default(now())
+
+  @@index([userId, domain, calculatedOn])
+}
+
+// ============================================================
+// Calendar
+// ============================================================
+
+enum EventKind {
+  EVENT
+  APPOINTMENT
+}
+
+enum RsvpStatus {
+  PENDING
+  YES
+  NO
+  MAYBE
+}
+
+enum ReminderChannel {
+  INAPP
+  EMAIL
+}
+
+/// Recurring life reminder (haircut, dentist...) independent of one-off calendar events.
+enum ReminderCadence {
+  ONCE
+  EVERY_N_DAYS
+  WEEKLY
+  MONTHLY_ON_DAY
+  EVERY_N_MONTHS
+}
+
+model RecurringReminder {
+  id              String          @id @default(cuid())
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  title           String
+  description     String?
+  location        String?
+  icon            String? // @untitledui/icons component name
+  contact         SocialContact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId       String?
+  phone           String?
+  link            String?
+  cadence         ReminderCadence @default(ONCE)
+  intervalN       Int? // every N days / months
+  dayOfMonth      Int? // for MONTHLY_ON_DAY
+  nextDueAt       DateTime
+  lastCompletedAt DateTime?
+  archived        Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([userId, nextDueAt, archived])
+}
+
+model EventCategory {
+  id        String          @id @default(cuid())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  name      String
+  color     String          @default("neutral") // red | emerald | sky | violet | amber | neutral
+  icon      String?
+  events    CalendarEvent[]
+  createdAt DateTime        @default(now())
+
+  @@index([userId])
+}
+
+model CalendarEvent {
+  id          String          @id @default(cuid())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  kind        EventKind       @default(EVENT)
+  title       String
+  description String?
+  location    String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  allDay      Boolean         @default(false)
+  category    EventCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId  String?
+  // Appointment-specific
+  provider    Provider?       @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  providerId  String?
+  doctor      Doctor?         @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  doctorId    String?
+  visitNotes  String?
+  rrule       String?
+  attendees   EventAttendee[]
+  reminders   EventReminder[]
+  records     MedicalRecord[]
+  todoItems   TodoItem[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([userId, startsAt])
+}
+
+model EventAttendee {
+  id        String         @id @default(cuid())
+  event     CalendarEvent  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+  contact   SocialContact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId String?
+  email     String?
+  name      String?
+  rsvp      RsvpStatus     @default(PENDING)
+
+  @@index([eventId])
+}
+
+model EventReminder {
+  id            String          @id @default(cuid())
+  event         CalendarEvent   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId       String
+  minutesBefore Int
+  channel       ReminderChannel @default(INAPP)
+  firesAt       DateTime?
+  sentAt        DateTime?
+
+  @@index([eventId])
+}
+
+// ============================================================
+// Jobs (application tracker)
+// ============================================================
+
+enum JobStatus {
+  NOT_STARTED
+  APPLIED
+  UNDER_REVIEW
+  ASSESSMENT
+  INTERVIEWING
+  OFFERED
+  OFFER_ACCEPTED
+  OFFER_DECLINED
+  REJECTED
+  GHOSTED
+  WITHDRAWN
+}
+
+enum WorkType {
+  HYBRID
+  REMOTE
+  IN_OFFICE
+  NA
+}
+
+enum JobDocumentKind {
+  RESUME
+  COVER_LETTER
+  CERTIFICATION
+  EDUCATION
+  CAREER_OTHER
+}
+
+enum ContactMethod {
+  LINKEDIN
+  EMAIL
+  PHONE
+  DISCORD
+}
+
+model Company {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  name            String
+  logoKey         String?
+  hqLocation      String?
+  officeLocations String[] @default([])
+  websiteDomain   String?
+  linkedinUrl     String?
+  industry        String?
+  size            String?
+  notesMarkdown   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  applications       JobApplication[]
+  contacts           JobContact[]
+  salaryEntries      CareerSalaryEntry[]
+  leads              JobLead[]
+  suggestedOrigins   SuggestedCompany[]
+  interviewQuestions InterviewQuestion[]
+  networkingOutreach NetworkingOutreach[]
+
+  @@index([userId, name])
+}
+
+model JobPhase {
+  id           String           @id @default(cuid())
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  name         String
+  archived     Boolean          @default(false)
+  startedAt    DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  applications JobApplication[]
+
+  @@index([userId, archived])
+}
+
+model JobApplication {
+  id             String    @id @default(cuid())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  company        Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId      String
+  applicationUrl String?
+  role           String
+  dateApplied    DateTime?
+  status         JobStatus @default(NOT_STARTED)
+  salaryMin      Int?
+  salaryMax      Int?
+  salaryCurrency String?   @default("USD")
+  location       String?
+  workType       WorkType  @default(NA)
+  heardFrom      String?
+  deadline       DateTime?
+  notesMarkdown  String?
+
+  // --- Power features ---
+  priority           Int       @default(0) // 0 none · 1 backup · 2 interested · 3 dream
+  jdText             String? // archived original job description text
+  thankYouSent       Boolean   @default(false) // overall post-interview courtesy flag
+  lastActivityAt     DateTime? // bumped on every logged event (for ghosting / health)
+  atsScore           Int? // last ATS keyword match score (0-100)
+  atsMissingKeywords String[]  @default([]) // keywords missing vs resume on last analysis
+
+  // Referral (who referred you in)
+  referredByName         String?
+  referredByRelationship String?
+  referredBy             JobContact? @relation("ReferralContact", fields: [referredByContactId], references: [id], onDelete: SetNull)
+  referredByContactId    String?
+
+  // Career goal alignment
+  target   CareerTarget? @relation(fields: [targetId], references: [id], onDelete: SetNull)
+  targetId String?
+
+  // Set when promoted from an AI JobLead: which saved search location it is
+  // nearest to, and how far (miles). Powers the location filter on the list.
+  nearestLocation   JobSearchLocation? @relation(fields: [nearestLocationId], references: [id], onDelete: SetNull)
+  nearestLocationId String?
+  distanceMiles     Float?
+
+  resumeVersion        JobDocumentVersion? @relation("ApplicationResume", fields: [resumeVersionId], references: [id])
+  resumeVersionId      String?
+  coverLetterVersion   JobDocumentVersion? @relation("ApplicationCoverLetter", fields: [coverLetterVersionId], references: [id])
+  coverLetterVersionId String?
+
+  phase   JobPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  phaseId String?
+
+  meetings        JobMeeting[]
+  attachments     JobAttachment[]
+  events          JobApplicationEvent[]
+  salaryEntries   CareerSalaryEntry[]
+  lead            JobLead?
+  interviewRounds InterviewRound[]
+  prepItems       PrepChecklistItem[]
+  questions       InterviewQuestion[]
+  offers          Offer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([companyId])
+  @@index([phaseId])
+  @@index([nearestLocationId])
+  @@index([targetId])
+  @@index([referredByContactId])
+}
+
+model JobApplicationEvent {
+  id            String         @id @default(cuid())
+  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String
+  type          String // created | updated | status | meeting | attachment
+  message       String
+  fromStatus    JobStatus?
+  toStatus      JobStatus?
+  createdAt     DateTime       @default(now())
+
+  @@index([applicationId])
+}
+
+model JobDocument {
+  id        String               @id @default(cuid())
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  name      String
+  kind      JobDocumentKind
+  versions  JobDocumentVersion[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@index([userId, kind])
+}
+
+model JobDocumentVersion {
+  id            String      @id @default(cuid())
+  document      JobDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId    String
+  versionNumber Int
+  label         String?
+  fileKey       String
+  fileName      String
+  fileSize      Int
+  mimeType      String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @default(now()) @updatedAt
+
+  usedAsResume      JobApplication[] @relation("ApplicationResume")
+  usedAsCoverLetter JobApplication[] @relation("ApplicationCoverLetter")
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
+}
+
+model JobMeeting {
+  id               String         @id @default(cuid())
+  application      JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId    String
+  type             String?
+  durationMinutes  Int?
+  dateTime         DateTime?
+  location         String?
+  notesMarkdown    String?
+  participantNames String[]       @default([])
+
+  participants JobContact[]    @relation("MeetingParticipants")
+  attachments  JobAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+}
+
+model JobContact {
+  id                     String          @id @default(cuid())
+  user                   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                 String
+  name                   String
+  company                Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  companyId              String?
+  role                   String?
+  kind                   JobContactKind?
+  preferredContactMethod ContactMethod?
+  email                  String?
+  phone                  String?
+  linkedinUrl            String?
+  discord                String?
+  pronouns               String?
+  location               String?
+  timezone               String?
+  lastContactedAt        DateTime?
+  notesMarkdown          String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  interactions         JobContactInteraction[]
+  meetings             JobMeeting[]            @relation("MeetingParticipants")
+  referredApplications JobApplication[]        @relation("ReferralContact")
+  networkingOutreach   NetworkingOutreach[]
+
+  @@index([userId, name])
+  @@index([companyId])
+}
+
+model JobContactInteraction {
+  id        String         @id @default(cuid())
+  contact   JobContact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  date      DateTime       @default(now())
+  channel   ContactMethod?
+  note      String?
+  createdAt DateTime       @default(now())
+
+  @@index([contactId])
+}
+
+model JobAttachment {
+  id        String   @id @default(cuid())
+  fileKey   String
+  fileName  String
+  fileSize  Int
+  mimeType  String
+  createdAt DateTime @default(now())
+
+  application   JobApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String?
+  meeting       JobMeeting?     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  meetingId     String?
+
+  @@index([applicationId])
+  @@index([meetingId])
+}
+
+// ============================================================
+// AI job search (saved locations, search profile, AI-found leads)
+// ============================================================
+
+enum JobLevel {
+  INTERNSHIP
+  ENTRY
+  JUNIOR
+  MID
+  SENIOR
+  LEAD
+  UNKNOWN
+}
+
+///
+/// Lifecycle of an AI-found role or company suggestion.
+/// 
+enum SuggestionStatus {
+  NEW // freshly suggested, awaiting the user's decision
+  DISMISSED // user removed it; kept so it is not re-suggested
+  ADDED // user promoted it (lead -> application, company -> tracked company)
+}
+
+///
+/// A place the user wants to search for jobs near (geocoded via Nominatim).
+/// 
+model JobSearchLocation {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  label       String // full display name, e.g. "Chicago, Illinois, United States"
+  shortLabel  String? // compact name, e.g. "Chicago, IL"
+  lat         Float
+  lon         Float
+  placeType   String? // Nominatim addresstype: city | postcode | town | ...
+  countryCode String?
+  priority    Int      @default(0) // lower = searched first / higher priority
+  maxResults  Int      @default(50) // how many roles to try to load for this location
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  leads        JobLead[]
+  applications JobApplication[]
+
+  @@index([userId])
+}
+
+///
+/// Single per-user job-search configuration (keywords, profile, distance, remote).
+/// 
+model JobSearchProfile {
+  id                  String     @id @default(cuid())
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String     @unique
+  profileText         String? // free-text "about me", e.g. "Computer science graduate ..."
+  keywords            String[]   @default([]) // roles/skills to look for
+  excludeKeywords     String[]   @default([]) // terms to avoid
+  levels              JobLevel[] @default([]) // empty = any level
+  distanceMiles       Int        @default(50) // 25 | 50 | 100 search radius
+  allowRemote         Boolean    @default(true)
+  includeNewCompanies Boolean    @default(true) // also surface companies not yet tracked
+  minSalary           Int? // optional salary floor (in profile currency)
+  resultsPerLocation  Int        @default(50) // default per-location target
+  // Automation thresholds
+  autoGhost           Boolean    @default(false) // auto-flag silent applications as ghosted
+  ghostAfterDays      Int        @default(21) // days of silence before auto-ghost
+  followUpAfterDays   Int        @default(7) // days of silence before a follow-up nudge
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+}
+
+///
+/// An AI-discovered company that is NOT yet tracked; user adds or dismisses it.
+/// 
+model SuggestedCompany {
+  id                String           @id @default(cuid())
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  name              String
+  websiteDomain     String?
+  logoKey           String?
+  industry          String?
+  hqLocation        String?
+  size              String?
+  status            SuggestionStatus @default(NEW)
+  promotedCompany   Company?         @relation(fields: [promotedCompanyId], references: [id], onDelete: SetNull)
+  promotedCompanyId String?
+  createdAt         DateTime         @default(now())
+
+  leads JobLead[]
+
+  @@index([userId, status])
+  @@index([userId, name])
+}
+
+///
+/// An AI-discovered job opening. Lives in the "AI suggested" tables until the user
+/// promotes it to a real JobApplication (status -> ADDED) or dismisses it.
+/// 
+model JobLead {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  // Company identity: either an already-tracked Company or a SuggestedCompany.
+  // companyName/companyDomain are denormalized so leads render without a join.
+  company            Company?          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId          String?
+  suggestedCompany   SuggestedCompany? @relation(fields: [suggestedCompanyId], references: [id], onDelete: Cascade)
+  suggestedCompanyId String?
+  companyName        String
+  companyDomain      String?
+
+  title              String
+  level              JobLevel  @default(UNKNOWN)
+  descriptionSnippet String?
+  applicationUrl     String?
+  salaryMin          Int?
+  salaryMax          Int?
+  salaryCurrency     String?   @default("USD")
+  deadline           DateTime?
+  locationText       String?
+  lat                Float?
+  lon                Float?
+  isRemote           Boolean   @default(false)
+
+  nearestLocation   JobSearchLocation? @relation(fields: [nearestLocationId], references: [id], onDelete: SetNull)
+  nearestLocationId String?
+  distanceMiles     Float?
+
+  matchScore  Int? // 0-100 fit against the search profile
+  matchReason String? // short rationale / qualification note
+
+  status                SuggestionStatus @default(NEW)
+  promotedApplication   JobApplication?  @relation(fields: [promotedApplicationId], references: [id], onDelete: SetNull)
+  promotedApplicationId String?          @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, status])
+  @@index([companyId])
+  @@index([suggestedCompanyId])
+  @@index([nearestLocationId])
+}
+
+///
+/// Tracks one AI job-search run so the UI can show live progress, estimate vs actual
+/// cost/count, and HALT a run in flight (the worker checks cancelRequested between passes).
+/// status: queued | running | done | cancelled | error.
+/// 
+model JobSearchRun {
+  id               String    @id @default(cuid())
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+  status           String    @default("queued")
+  params           Json?
+  targetCount      Int       @default(50)
+  foundCount       Int       @default(0)
+  estimatedCostUsd Decimal   @default(0) @db.Decimal(10, 6)
+  actualCostUsd    Decimal   @default(0) @db.Decimal(10, 6)
+  cancelRequested  Boolean   @default(false)
+  progress         Json?
+  error            String?
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+}
+
+///
+/// Backup of dismissed/removed AI-suggested roles. Suggested roles are NEVER hard-deleted;
+/// they move here and are only purged via Settings. Mirrors JobLead's display fields.
+/// 
+model DeletedSuggestedRole {
+  id                 String   @id @default(cuid())
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String
+  companyName        String
+  companyDomain      String?
+  title              String
+  level              String   @default("UNKNOWN")
+  descriptionSnippet String?
+  applicationUrl     String?
+  salaryMin          Int?
+  salaryMax          Int?
+  salaryCurrency     String?  @default("USD")
+  locationText       String?
+  lat                Float?
+  lon                Float?
+  isRemote           Boolean  @default(false)
+  matchScore         Int?
+  matchReason        String?
+  originalStatus     String   @default("NEW")
+  deletedAt          DateTime @default(now())
+  createdAt          DateTime @default(now())
+
+  @@index([userId, deletedAt])
+}
+
+///
+/// Global cache of place-string -> coordinates so we geocode each city once.
+/// 
+model GeocodeCache {
+  id          String   @id @default(cuid())
+  query       String   @unique
+  lat         Float?
+  lon         Float?
+  displayName String?
+  createdAt   DateTime @default(now())
+}
+
+// ============================================================
+// Career power features: interviews, prep, offers, networking, goals
+// ============================================================
+
+enum InterviewFormat {
+  PHONE
+  VIDEO
+  ONSITE
+  TAKE_HOME
+  PANEL
+  OTHER
+}
+
+enum RoundOutcome {
+  PENDING
+  PASSED
+  FAILED
+  CANCELLED
+  NO_SHOW
+  WITHDREW
+}
+
+enum OfferStatus {
+  RECEIVED
+  NEGOTIATING
+  ACCEPTED
+  DECLINED
+  RESCINDED
+  EXPIRED
+}
+
+enum NegotiationKind {
+  INITIAL
+  COUNTER
+  REVISED
+  FINAL
+}
+
+enum JobContactKind {
+  RECRUITER
+  HIRING_MANAGER
+  REFERRAL
+  INTERVIEWER
+  TEAM_MEMBER
+  OTHER
+}
+
+///
+/// One interview round for an application (Round 1, 2, …, Final).
+/// 
+model InterviewRound {
+  id               String          @id @default(cuid())
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+  application      JobApplication  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId    String
+  roundNumber      Int             @default(1)
+  name             String? // e.g. "Recruiter screen", "Final onsite"
+  format           InterviewFormat @default(VIDEO)
+  scheduledAt      DateTime?
+  durationMinutes  Int?
+  outcome          RoundOutcome    @default(PENDING)
+  selfRating       Int? // 1-5 self score
+  interviewerNames String[]        @default([])
+  notesMarkdown    String? // private reflection: what went well / poorly
+  thankYouSent     Boolean         @default(false)
+  thankYouSentAt   DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  questions InterviewQuestion[]
+
+  @@index([applicationId])
+  @@index([userId])
+}
+
+///
+/// A question asked in an interview, with your stored answer for reuse.
+/// 
+model InterviewQuestion {
+  id            String          @id @default(cuid())
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  application   JobApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  applicationId String?
+  company       Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  companyId     String?
+  round         InterviewRound? @relation(fields: [roundId], references: [id], onDelete: SetNull)
+  roundId       String?
+  question      String
+  answer        String?
+  category      String? // behavioral | technical | system-design | culture | other
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([applicationId])
+  @@index([companyId])
+}
+
+///
+/// A per-application interview-prep checklist item.
+/// 
+model PrepChecklistItem {
+  id            String         @id @default(cuid())
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  application   JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId String
+  label         String
+  done          Boolean        @default(false)
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+
+  @@index([applicationId])
+}
+
+///
+/// A reusable behavioral STAR story.
+/// 
+model StarStory {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  title     String
+  situation String?
+  task      String?
+  action    String?
+  result    String?
+  tags      String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+///
+/// A job offer attached to an application (for the comparison table).
+/// 
+model Offer {
+  id                String         @id @default(cuid())
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  application       JobApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationId     String
+  status            OfferStatus    @default(RECEIVED)
+  baseSalary        Int?
+  bonus             Int? // target annual bonus
+  equityValue       Int? // annualized equity estimate
+  equityDescription String?
+  signOnBonus       Int?
+  ptoDays           Int?
+  currency          String         @default("USD")
+  benefits          String? // free text / markdown
+  location          String?
+  remote            Boolean?
+  startDate         DateTime?
+  decisionDeadline  DateTime?
+  notesMarkdown     String?
+  letterFileKey     String? // uploaded offer letter
+  letterFileName    String?
+  receivedAt        DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  negotiationSteps NegotiationStep[]
+
+  @@index([userId])
+  @@index([applicationId])
+}
+
+///
+/// One step in negotiating an offer (initial → counter → final).
+/// 
+model NegotiationStep {
+  id          String          @id @default(cuid())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  offer       Offer           @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  offerId     String
+  kind        NegotiationKind @default(COUNTER)
+  date        DateTime?
+  baseSalary  Int?
+  bonus       Int?
+  equityValue Int?
+  rationale   String?
+  outcome     String?
+  createdAt   DateTime        @default(now())
+
+  @@index([offerId])
+}
+
+///
+/// A networking outreach touch (cold message, intro request, etc.).
+/// 
+model NetworkingOutreach {
+  id            String         @id @default(cuid())
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  contact       JobContact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId     String?
+  company       Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  companyId     String?
+  personName    String // denormalized for quick entry
+  channel       ContactMethod?
+  sentAt        DateTime?
+  responded     Boolean        @default(false)
+  respondedAt   DateTime?
+  converted     Boolean        @default(false) // turned into a real conversation / referral
+  notesMarkdown String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([contactId])
+  @@index([companyId])
+}
+
+///
+/// A career target on the goals board; applications can align to one.
+/// 
+model CareerTarget {
+  id                String   @id @default(cuid())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  title             String
+  targetRole        String?
+  targetCompanyType String?
+  targetSalary      Int?
+  targetLocation    String?
+  notesMarkdown     String?
+  isPrimary         Boolean  @default(false)
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  applications JobApplication[]
+
+  @@index([userId])
+}
+
+// ============================================================
+// Career extras (skills, certs, salary, mentors, resume builder)
+// ============================================================
+
+model CareerSkill {
+  id                String                @id @default(cuid())
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  name              String
+  category          String?
+  proficiency       Int?
+  targetProficiency Int?
+  practicePlan      String?
+  proofUrl          String?
+  hoursLogged       Float                 @default(0)
+  evidence          CareerSkillEvidence[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([userId])
+}
+
+model CareerSkillEvidence {
+  id           String      @id @default(cuid())
+  skill        CareerSkill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skillId      String
+  evidenceUrl  String?
+  evidenceType String?
+  description  String?
+  createdAt    DateTime    @default(now())
+
+  @@index([skillId])
+}
+
+model CareerCertification {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  name        String
+  issuer      String?
+  status      String? // planned | in_progress | completed
+  examDate    DateTime?
+  completedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model CareerProject {
+  id                String    @id @default(cuid())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  name              String
+  description       String?
+  role              String?
+  technologies      String[]  @default([])
+  startedOn         DateTime?
+  completedOn       DateTime?
+  impactDescription String?
+  url               String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model CareerSalaryEntry {
+  id            String          @id @default(cuid())
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  date          DateTime
+  company       String? // legacy free-text
+  companyRef    Company?        @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  companyId     String?
+  application   JobApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  applicationId String?
+  title         String?
+  baseSalary    Decimal         @default(0) @db.Decimal(14, 2)
+  bonus         Decimal         @default(0) @db.Decimal(14, 2)
+  equity        Decimal         @default(0) @db.Decimal(14, 2)
+  totalComp     Decimal         @default(0) @db.Decimal(14, 2)
+  currency      String          @default("USD")
+  createdAt     DateTime        @default(now())
+
+  @@index([userId, date])
+}
+
+model CareerGoal {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  title       String
+  description String?
+  targetDate  DateTime?
+  status      String? // active | completed | abandoned
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model CareerWeeklyReview {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  weekOf        DateTime @db.Date
+  wins          String?
+  challenges    String?
+  learning      String?
+  goalsProgress Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, weekOf])
+}
+
+model CareerJournalEntry {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  date      DateTime @db.Date
+  entry     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+model CareerMentor {
+  id              String    @id @default(cuid())
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  name            String
+  expertise       String?
+  contactInfo     String?
+  lastMeetingDate DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model CareerReview {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  reviewDate   DateTime
+  reviewerName String?
+  rating       Float?
+  feedback     String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum ResumeItemKind {
+  EXPERIENCE
+  PROJECT
+  EDUCATION
+  VOLUNTEER
+  SKILL
+  CERTIFICATION
+  AWARD
+  ORGANIZATION
+}
+
+model Resume {
+  id        String       @id @default(cuid())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  name      String       @default("Resume")
+  headline  String?
+  summary   String?
+  items     ResumeItem[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([userId])
+}
+
+model ResumeItem {
+  id          String         @id @default(cuid())
+  resume      Resume         @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  resumeId    String
+  kind        ResumeItemKind
+  order       Int            @default(0)
+  title       String
+  subtitle    String?
+  location    String?
+  startDate   DateTime?
+  endDate     DateTime?
+  current     Boolean        @default(false)
+  description String?
+  url         String?
+  meta        Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([resumeId, kind])
+}
+
+// ============================================================
+// Health: metrics, vitals, nutrition, sleep, habits, journal,
+// medical, photos, substances
+// ============================================================
+
+model BodyMetric {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  metricType String // weight | body_fat_pct | custom | ...
+  customName String?
+  value      Float
+  unit       String?
+  measuredAt DateTime
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, metricType, measuredAt])
+}
+
+model VitalReading {
+  id         String              @id @default(cuid())
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  vitalType  String // blood_pressure | heart_rate | temperature | spo2 | custom
+  customName String?
+  value      Float?
+  value2     Float?
+  unit       String?
+  measuredAt DateTime
+  notes      String?
+  fields     VitalReadingField[]
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@index([userId, vitalType, measuredAt])
+}
+
+model VitalReadingField {
+  id        String       @id @default(cuid())
+  reading   VitalReading @relation(fields: [readingId], references: [id], onDelete: Cascade)
+  readingId String
+  label     String
+  unit      String?
+  value     Float
+  position  Int          @default(0)
+
+  @@index([readingId])
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+enum FoodSource {
+  TEXT
+  BARCODE
+  VISION
+  MANUAL
+}
+
+model NutritionDay {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  date      DateTime @db.Date
+  notes     String?
+  meals     Meal[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model Meal {
+  id        String       @id @default(cuid())
+  day       NutritionDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  dayId     String
+  mealType  MealType
+  name      String?
+  order     Int          @default(0)
+  entries   FoodEntry[]
+  loggedAt  DateTime?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([dayId])
+}
+
+model FoodEntry {
+  id               String       @id @default(cuid())
+  meal             Meal         @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  mealId           String
+  product          FoodProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId        String?
+  description      String
+  source           FoodSource   @default(MANUAL)
+  servingSize      String?
+  quantity         Float?
+  unit             String?
+  calories         Float?
+  proteinG         Float?
+  carbsG           Float?
+  fatG             Float?
+  fiberG           Float?
+  sugarG           Float?
+  sodiumMg         Float?
+  cholesterolMg    Float?
+  saturatedFatG    Float?
+  transFatG        Float?
+  potassiumMg      Float?
+  aiAnalyzed       Boolean      @default(false)
+  aiRawResponse    Json?
+  manuallyAdjusted Boolean      @default(false)
+  confidence       Float?
+  imageKey         String?
+  order            Int          @default(0)
+  isFavorite       Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([mealId])
+}
+
+model FoodProduct {
+  id             String          @id @default(cuid())
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  name           String
+  quantity       Float?
+  unit           String?
+  calories       Float?
+  proteinG       Float?
+  carbsG         Float?
+  fatG           Float?
+  fiberG         Float?
+  barcode        String?
+  entries        FoodEntry[]
+  savedMealItems SavedMealItem[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([userId, name])
+}
+
+model NutritionGoal {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  calories  Float?
+  proteinG  Float?
+  carbsG    Float?
+  fatG      Float?
+  fiberG    Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SavedMeal {
+  id        String          @id @default(cuid())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  name      String
+  mealType  MealType?
+  items     SavedMealItem[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([userId])
+}
+
+model SavedMealItem {
+  id          String       @id @default(cuid())
+  savedMeal   SavedMeal    @relation(fields: [savedMealId], references: [id], onDelete: Cascade)
+  savedMealId String
+  product     FoodProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productId   String?
+  description String
+  source      FoodSource   @default(MANUAL)
+  servingSize String?
+  quantity    Float?
+  unit        String?
+  calories    Float?
+  proteinG    Float?
+  carbsG      Float?
+  fatG        Float?
+  fiberG      Float?
+  position    Int          @default(0)
+
+  @@index([savedMealId])
+  @@index([productId])
+}
+
+model WaterLog {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  date      DateTime @db.Date
+  amountMl  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model SleepEntry {
+  id              String              @id @default(cuid())
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  date            DateTime            @db.Date
+  bedtime         DateTime?
+  wakeTime        DateTime?
+  totalMinutes    Int?
+  sleepQuality    Int?
+  feelRested      Int?
+  sleepLatencyMin Int?
+  restingHrBpm    Int?
+  hrvMs           Int?
+  notes           String?
+  surveyResponses Json?
+  interruptions   SleepInterruption[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([userId, date])
+}
+
+model SleepInterruption {
+  id              String     @id @default(cuid())
+  entry           SleepEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  entryId         String
+  time            DateTime?
+  durationMinutes Int?
+  reason          String?
+  notes           String?
+
+  @@index([entryId])
+}
+
+model Habit {
+  id                String           @id @default(cuid())
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  name              String
+  description       String?
+  habitType         String? // good | bad
+  frequency         String? // daily | weekly | custom
+  targetCount       Int?
+  targetDays        Int?
+  daysOfWeek        String[]         @default([])
+  color             String?
+  icon              String?
+  active            Boolean          @default(true)
+  category          String?
+  cue               String?
+  routine           String?
+  reward            String?
+  stackAfterHabit   Habit?           @relation("HabitStack", fields: [stackAfterHabitId], references: [id], onDelete: SetNull)
+  stackAfterHabitId String?
+  stackedHabits     Habit[]          @relation("HabitStack")
+  difficulty        String?
+  priority          String?
+  reminderTime      String?
+  logs              HabitLog[]
+  milestones        HabitMilestone[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([userId, active])
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  habitId   String
+  logDate   DateTime @db.Date
+  count     Int      @default(1)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([habitId, logDate])
+}
+
+model HabitMilestone {
+  id            String   @id @default(cuid())
+  habit         Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  habitId       String
+  milestoneDate DateTime @db.Date
+  description   String?
+  createdAt     DateTime @default(now())
+
+  @@index([habitId])
+}
+
+model JournalEntry {
+  id            String        @id @default(cuid())
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  date          DateTime      @db.Date
+  reflection    String?
+  gratitude     String?
+  overallRating Int?
+  realmRatings  RealmRating[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId, date])
+}
+
+model RealmRating {
+  id      String       @id @default(cuid())
+  entry   JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  entryId String
+  realm   String // physical_health | mental_health | relationships | work | finances | ...
+  rating  Int
+
+  @@index([entryId])
+}
+
+model Provider {
+  id        String          @id @default(cuid())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  name      String
+  address   String?
+  phone     String?
+  website   String?
+  notes     String?
+  archived  Boolean         @default(false)
+  doctors   Doctor[]
+  events    CalendarEvent[]
+  records   MedicalRecord[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([userId])
+}
+
+model Doctor {
+  id         String          @id @default(cuid())
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  provider   Provider?       @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  providerId String?
+  name       String
+  profession String?
+  avatarKey  String?
+  location   String?
+  phone      String?
+  email      String?
+  notes      String?
+  archived   Boolean         @default(false)
+  events     CalendarEvent[]
+  records    MedicalRecord[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([userId])
+}
+
+model MedicalRecord {
+  id             String                 @id @default(cuid())
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  name           String
+  providerName   String?
+  doctorName     String?
+  provider       Provider?              @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  providerId     String?
+  doctor         Doctor?                @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  doctorId       String?
+  event          CalendarEvent?         @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId        String?
+  recordDate     DateTime?
+  fileKey        String?
+  fileName       String?
+  mimeType       String?
+  fileSize       Int?
+  notes          String?
+  extractedItems MedicalExtractedItem[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([userId])
+}
+
+model MedicalExtractedItem {
+  id        String        @id @default(cuid())
+  record    MedicalRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  recordId  String
+  itemType  String?
+  label     String
+  value     String?
+  unit      String?
+  createdAt DateTime      @default(now())
+
+  @@index([recordId])
+}
+
+enum PhotoAngle {
+  FRONT
+  SIDE
+  BACK
+}
+
+enum TrainingPhase {
+  BULK
+  CUT
+  MAINTAIN
+}
+
+model ProgressPhoto {
+  id          String         @id @default(cuid())
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  originalKey String
+  thumbKey    String?
+  blurKey     String?
+  angle       PhotoAngle?
+  phase       TrainingPhase?
+  takenAt     DateTime       @default(now())
+  weightKg    Float?
+  notes       String?
+  workout     Workout?       @relation(fields: [workoutId], references: [id], onDelete: SetNull)
+  workoutId   String?
+  processed   Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+
+  @@index([userId, takenAt])
+}
+
+model SubstanceLog {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  substanceType String // alcohol | caffeine | nicotine | marijuana | custom
+  amount        Float?
+  unit          String?
+  loggedAt      DateTime @default(now())
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@index([userId, loggedAt])
+}
+
+model CustomSubstanceType {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Sobriety streak counter — "sober from X since Y", with relapse history.
+model SobrietyCounter {
+  id          String            @id @default(cuid())
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  name        String // alcohol | drugs | nicotine | masturbation | custom...
+  description String?
+  color       String?
+  icon        String?
+  startedAt   DateTime // start of the CURRENT streak
+  archived    Boolean           @default(false)
+  relapses    SobrietyRelapse[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([userId, archived])
+}
+
+model SobrietyRelapse {
+  id         String          @id @default(cuid())
+  counter    SobrietyCounter @relation(fields: [counterId], references: [id], onDelete: Cascade)
+  counterId  String
+  relapsedAt DateTime
+  notes      String?
+  createdAt  DateTime        @default(now())
+
+  @@index([counterId, relapsedAt])
+}
+
+// ============================================================
+// Peptides & therapeutics
+// ============================================================
+
+model Peptide {
+  id                    String         @id @default(cuid())
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                String
+  name                  String
+  vialMg                Float
+  doseUnit              String         @default("mg") // mg | mcg
+  waterMl               Float
+  syringeUnitsPerMl     Int            @default(100) // 100 | 50 | 40
+  vialsOwned            Float          @default(0)
+  vialsOpened           Int            @default(0)
+  activeVialRemainingMl Float          @default(0)
+  cycleStartDate        DateTime?      @db.Date
+  position              Int            @default(0)
+  blocks                PeptideBlock[]
+  logs                  PeptideLog[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([userId, position])
+}
+
+model PeptideBlock {
+  id           String       @id @default(cuid())
+  peptide      Peptide      @relation(fields: [peptideId], references: [id], onDelete: Cascade)
+  peptideId    String
+  startWeek    Int
+  endWeek      Int
+  dosePerAdmin Float
+  dosesPerWeek Float
+  note         String?
+  order        Int          @default(0)
+  logs         PeptideLog[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([peptideId])
+}
+
+model PeptideLog {
+  id        String        @id @default(cuid())
+  peptide   Peptide       @relation(fields: [peptideId], references: [id], onDelete: Cascade)
+  peptideId String
+  block     PeptideBlock? @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  blockId   String?
+  date      DateTime      @db.Date
+  dose      Float
+  units     Float
+  mlUsed    Float
+  site      String?
+  createdAt DateTime      @default(now())
+
+  @@index([peptideId, date])
+}
+
+model Medication {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  name         String
+  dosageAmount Float?
+  dosageUnit   String?
+  frequency    String?
+  notes        String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, active])
+}
+
+model Supplement {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  name         String
+  dosageAmount Float?
+  dosageUnit   String?
+  frequency    String?
+  notes        String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, active])
+}
+
+enum TherapeuticKind {
+  MEDICATION
+  SUPPLEMENT
+  PEPTIDE
+  OTHER
+}
+
+enum SchedulePattern {
+  DAILY
+  EVERY_N_DAYS
+  WEEKLY_DOW
+  WEEKLY_ONCE
+}
+
+model TherapeuticSchedule {
+  id         String            @id @default(cuid())
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  kind       TherapeuticKind
+  name       String
+  dosage     String?
+  notes      String?
+  startDate  DateTime?         @db.Date
+  endDate    DateTime?         @db.Date
+  pattern    SchedulePattern   @default(DAILY)
+  everyN     Int?
+  daysOfWeek String[]          @default([]) // MON..SUN
+  timesOfDay String[]          @default([]) // HH:mm
+  archived   Boolean           @default(false)
+  doses      TherapeuticDose[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([userId, archived])
+}
+
+model TherapeuticDose {
+  id          String               @id @default(cuid())
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  schedule    TherapeuticSchedule? @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  scheduleId  String?
+  scheduledAt DateTime
+  loggedAt    DateTime?
+  skippedAt   DateTime?
+  notes       String?
+  todoItem    TodoItem?
+  createdAt   DateTime             @default(now())
+
+  @@unique([scheduleId, scheduledAt])
+  @@index([userId, scheduledAt])
+  @@index([scheduleId])
+}
+
+model TherapeuticLog {
+  id              String          @id @default(cuid())
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  therapeuticKind TherapeuticKind
+  therapeuticId   String? // loose FK to Medication/Supplement/Peptide
+  name            String?
+  doseAmount      Float?
+  doseUnit        String?
+  loggedAt        DateTime        @default(now())
+  notes           String?
+  createdAt       DateTime        @default(now())
+
+  @@index([userId, loggedAt])
+}
+
+// ============================================================
+// Workouts
+// ============================================================
+
+enum ExerciseForce {
+  PUSH
+  PULL
+  STATIC
+}
+
+enum ExerciseLevel {
+  BEGINNER
+  INTERMEDIATE
+  EXPERT
+}
+
+enum ExerciseMechanic {
+  COMPOUND
+  ISOLATION
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model Exercise {
+  id               String            @id @default(cuid())
+  user             User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String? // null = global/catalog exercise
+  name             String
+  slug             String            @unique
+  muscles          String[]          @default([])
+  secondaryMuscles String[]          @default([])
+  equipment        String[]          @default([])
+  parent           Exercise?         @relation("ExerciseVariations", fields: [parentId], references: [id], onDelete: SetNull)
+  parentId         String?
+  variations       Exercise[]        @relation("ExerciseVariations")
+  instructions     String?
+  instructionSteps String[]          @default([])
+  notes            String?
+  mediaUrl         String?
+  mediaKey         String?
+  mediaType        MediaType?
+  images           String[]          @default([])
+  force            ExerciseForce?
+  level            ExerciseLevel?
+  mechanic         ExerciseMechanic?
+  category         String?
+  externalId       String?           @unique
+  tracksReps       Boolean           @default(true)
+  tracksWeight     Boolean           @default(true)
+  tracksTime       Boolean           @default(false)
+  tracksDistance   Boolean           @default(false)
+  archived         Boolean           @default(false)
+  archivedAt       DateTime?
+
+  workoutExercises  WorkoutExercise[]
+  templateExercises TemplateExercise[]
+  personalRecords   PersonalRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([name])
+}
+
+enum ProgressionScheme {
+  NONE
+  LINEAR
+  DOUBLE
+  FIVETHREEONE
+}
+
+model Template {
+  id                String             @id @default(cuid())
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  name              String
+  note              String?
+  progression       ProgressionScheme  @default(NONE)
+  progressionStepKg Float?
+  cycleWeek         Int?
+  archived          Boolean            @default(false)
+  exercises         TemplateExercise[]
+  workouts          Workout[]
+  schedules         WorkoutSchedule[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([userId, archived])
+}
+
+model TemplateExercise {
+  id              String        @id @default(cuid())
+  template        Template      @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId      String
+  exercise        Exercise      @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exerciseId      String
+  order           Int           @default(0)
+  targetSets      Int?
+  targetReps      Int?
+  targetRepsMin   Int?
+  targetRepsMax   Int?
+  targetWeight    Float?
+  trainingMaxKg   Float?
+  targetTimeSec   Int?
+  targetDistanceM Float?
+  note            String?
+  restSec         Int?
+  warmupSets      Json?
+  groupKey        String? // superset letter A-Z
+  targetRpe       Float?
+  tempo           String? // ecc-pause-conc-rest
+  perSetMode      Boolean       @default(false)
+  sets            TemplateSet[]
+
+  @@index([templateId])
+  @@index([exerciseId])
+}
+
+model TemplateSet {
+  id                 String           @id @default(cuid())
+  templateExercise   TemplateExercise @relation(fields: [templateExerciseId], references: [id], onDelete: Cascade)
+  templateExerciseId String
+  order              Int              @default(0)
+  targetReps         Int?
+  targetRepsMin      Int?
+  targetRepsMax      Int?
+  targetWeight       Float?
+  targetRpe          Float?
+  isAmrap            Boolean          @default(false)
+  isWarmup           Boolean          @default(false)
+
+  @@index([templateExerciseId])
+}
+
+model Workout {
+  id         String            @id @default(cuid())
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  name       String?
+  note       String?
+  rpe        Float?
+  date       DateTime          @db.Date
+  startedAt  DateTime?
+  endedAt    DateTime?
+  ///
+  /// Accumulated paused milliseconds (durable across reloads).
+  ///
+  pausedMs   Int               @default(0)
+  ///
+  /// Timestamp the current pause began; null when the session is running.
+  ///
+  pausedAt   DateTime?
+  template   Template?         @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  templateId String?
+  exercises  WorkoutExercise[]
+  photos     ProgressPhoto[]
+  schedule   WorkoutSchedule?
+  deletedAt  DateTime?
+  ///
+  /// Standalone exercise attempts — hidden from workout log/lists but counted in PRs & history.
+  ///
+  isQuickLog Boolean           @default(false)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([userId, date])
+}
+
+model WorkoutExercise {
+  id         String     @id @default(cuid())
+  workout    Workout    @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workoutId  String
+  exercise   Exercise   @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exerciseId String
+  order      Int        @default(0)
+  note       String?
+  groupKey   String?
+  restSec    Int?
+  tempo      String?
+  sets       SetEntry[]
+
+  @@index([workoutId])
+  @@index([exerciseId])
+}
+
+model SetEntry {
+  id                String          @id @default(cuid())
+  workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+  workoutExerciseId String
+  order             Int             @default(0)
+  targetReps        Int?
+  actualReps        Int?
+  targetWeight      Float?
+  actualWeight      Float?
+  targetSeconds     Int?
+  actualSeconds     Int?
+  targetMeters      Float?
+  actualMeters      Float?
+  rpe               Float?
+  targetRpe         Float?
+  isWarmup          Boolean         @default(false)
+  isAmrap           Boolean         @default(false)
+  completed         Boolean         @default(false)
+  restTakenSec      Int? // actual rest logged after this set (stopwatch)
+
+  @@index([workoutExerciseId])
+}
+
+model PersonalRecord {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  exerciseId String
+  recordType String // 1RM | volume | reps | time | distance
+  value      Float
+  unit       String?
+  achievedOn DateTime @db.Date
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, exerciseId])
+}
+
+/// Workout planned ahead of time; adherence = done (linked workout) vs missed (past, none).
+model WorkoutSchedule {
+  id         String    @id @default(cuid())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  date       DateTime  @db.Date
+  template   Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  templateId String?
+  name       String?
+  notes      String?
+  workout    Workout?  @relation(fields: [workoutId], references: [id], onDelete: SetNull)
+  workoutId  String?   @unique // the session that fulfilled this plan
+  skipped    Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([userId, date])
+}
+
+model TrainingCycle {
+  id        String        @id @default(cuid())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  phase     TrainingPhase
+  startDate DateTime      @db.Date
+  endDate   DateTime?     @db.Date
+  note      String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId, startDate])
+}
+
+model BodyMeasurement {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  date       DateTime @db.Date
+  weightKg   Float?
+  bodyFatPct Float?
+  chestCm    Float?
+  waistCm    Float?
+  neckCm     Float?
+  hipCm      Float?
+  armLCm     Float?
+  armRCm     Float?
+  legLCm     Float?
+  legRCm     Float?
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+// ============================================================
+// Financial
+// ============================================================
+
+enum FinAccountKind {
+  CHECKING
+  SAVINGS
+  MONEY_MARKET
+  CD // certificate of deposit
+  BROKERAGE
+  LOAN // legacy — hidden in UI
+  OTHER
+}
+
+enum CardType {
+  CREDIT
+  DEBIT
+  CHARGE
+  PREPAID
+  OTHER
+}
+
+/// Financial institution — managed like a phone contact: labeled phones/emails,
+/// notes, and persons of contact. Accounts/cards reference it via dropdown.
+model Institution {
+  id        String               @id @default(cuid())
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  name      String
+  website   String?
+  logoKey   String? // uploaded logo (S3); falls back to favicon-by-website
+  notes     String?
+  phones    InstitutionPhone[]
+  emails    InstitutionEmail[]
+  people    InstitutionContact[]
+  accounts  FinAccount[]
+  cards     CreditCard[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@unique([userId, name])
+}
+
+model InstitutionPhone {
+  id            String      @id @default(cuid())
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  institutionId String
+  label         String // custom: "Fraud dept", "Local branch", ...
+  phone         String
+
+  @@index([institutionId])
+}
+
+model InstitutionEmail {
+  id            String      @id @default(cuid())
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  institutionId String
+  label         String
+  email         String
+
+  @@index([institutionId])
+}
+
+model InstitutionContact {
+  id            String      @id @default(cuid())
+  institution   Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  institutionId String
+  name          String
+  role          String? // "Local branch rep", "Corporate", ...
+  phone         String?
+  email         String?
+  notes         String?
+
+  @@index([institutionId])
+}
+
+enum TransactionSource {
+  MANUAL
+  PLAID
+  CSV
+  STATEMENT
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum SubscriptionCadence {
+  MONTHLY
+  YEARLY
+  WEEKLY
+  OTHER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAUSED
+}
+
+model FinAccount {
+  id                String           @id @default(cuid())
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  kind              FinAccountKind   @default(CHECKING)
+  institution       String? // legacy free-text
+  institutionRef    Institution?     @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  institutionId     String?
+  nickname          String?
+  branchLocation    String?
+  openedAt          DateTime?        @db.Date
+  closedAt          DateTime?        @db.Date
+  owners            SocialContact[]  @relation("FinAccountOwners")
+  last4             String?
+  currency          String           @default("USD")
+  currentBalance    Decimal          @default(0) @db.Decimal(14, 2)
+  lastBalanceAt     DateTime?
+  includeInNetWorth Boolean          @default(true)
+  isAsset           Boolean          @default(true)
+  notes             String?
+  archived          Boolean          @default(false)
+  // account replacement chain (re-issued/renumbered accounts are "the same account")
+  replacedBy        FinAccount?      @relation("AccountReplacement", fields: [replacedById], references: [id], onDelete: SetNull)
+  replacedById      String?
+  replaces          FinAccount[]     @relation("AccountReplacement")
+  // brokerage (kind == BROKERAGE): holdings + optional Alpaca link for live values
+  holdings          Holding[]
+  alpacaLinked      Boolean          @default(false) // mirror live Alpaca equity into this account's value
+  transactions      FinTransaction[]
+  statements        FinStatement[]
+  incomeStreams     IncomeStream[]
+  openedFromPlans   FinancialPlan[]  @relation("PlanOpenedAccount")
+  plaidAccount      PlaidAccount?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([userId, archived])
+}
+
+model CreditCard {
+  id                   String           @id @default(cuid())
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId               String
+  issuer               String? // legacy free-text
+  institutionRef       Institution?     @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  institutionId        String?
+  nickname             String?
+  cardType             CardType         @default(CREDIT)
+  expMonth             Int?
+  expYear              Int?
+  branchLocation       String?
+  openedAt             DateTime?        @db.Date
+  closedAt             DateTime?        @db.Date
+  owners               SocialContact[]  @relation("CreditCardOwners")
+  productName          String?
+  last4                String?
+  apr                  Decimal?         @db.Decimal(6, 3)
+  creditLimit          Decimal?         @db.Decimal(12, 2)
+  currentBalance       Decimal          @default(0) @db.Decimal(12, 2)
+  cardStyle            String?
+  cardImageKey         String?
+  ///
+  /// From Plaid Liabilities — minimum payment due this cycle.
+  ///
+  minimumPayment       Decimal?         @db.Decimal(12, 2)
+  paymentDueAt         DateTime?        @db.Date
+  lastPaymentAmount    Decimal?         @db.Decimal(12, 2)
+  paymentOverdue       Boolean          @default(false)
+  lastStatementBalance Decimal?         @db.Decimal(12, 2)
+  rewardsNotes         String?
+  notes                String?
+  archived             Boolean          @default(false)
+  replacedBy           CreditCard?      @relation("CardReplacement", fields: [replacedById], references: [id], onDelete: SetNull)
+  replacedById         String?
+  replaces             CreditCard[]     @relation("CardReplacement")
+  cardNumbers          CardNumber[]
+  rewards              CardReward[]
+  perks                CardPerk[]
+  openedFromPlans      FinancialPlan[]  @relation("PlanOpenedCard")
+  transactions         FinTransaction[]
+  statements           FinStatement[]
+  plaidAccount         PlaidAccount?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([userId, archived])
+}
+
+enum FinancialPlanKind {
+  ACCOUNT
+  CARD
+  BROKERAGE
+  OTHER
+}
+
+enum FinancialPlanStatus {
+  PLANNED
+  OPENED
+  DISMISSED
+}
+
+/// A planned/future financial product to open (a card or account) scheduled for later.
+model FinancialPlan {
+  id                String              @id @default(cuid())
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  kind              FinancialPlanKind   @default(CARD)
+  name              String // e.g. "Amex Platinum", "Ally HYSA"
+  institutionName   String?
+  accountKind       FinAccountKind? // when kind == ACCOUNT/BROKERAGE
+  cardType          CardType? // when kind == CARD
+  targetDate        DateTime?           @db.Date // when you plan to open it
+  reason            String? // why (sign-up bonus, rewards, emergency fund...)
+  expectedAnnualFee Decimal?            @db.Decimal(12, 2)
+  expectedBonus     String? // free text: "75k points after $4k spend"
+  notes             String?
+  status            FinancialPlanStatus @default(PLANNED)
+  // once opened, link to the real product it became
+  finAccount        FinAccount?         @relation("PlanOpenedAccount", fields: [finAccountId], references: [id], onDelete: SetNull)
+  finAccountId      String?
+  creditCard        CreditCard?         @relation("PlanOpenedCard", fields: [creditCardId], references: [id], onDelete: SetNull)
+  creditCardId      String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([userId, status, targetDate])
+}
+
+enum CardRewardType {
+  PERCENT // % back (e.g. 3% on dining)
+  POINTS // points/x multiplier (e.g. 4x on groceries)
+  MILES // airline miles
+  CASHBACK // flat cash back
+}
+
+/// A reward a card earns in a category (e.g. "3% on dining", "4x points on groceries").
+model CardReward {
+  id           String         @id @default(cuid())
+  creditCard   CreditCard     @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+  creditCardId String
+  category     String // "Dining", "Groceries", "Travel", "Everything else", ...
+  type         CardRewardType @default(PERCENT)
+  rate         Float // 3 (=> 3% / 3x), 1.5, etc.
+  cap          String? // optional spend cap / condition, free text
+  notes        String?
+  order        Int            @default(0)
+
+  @@index([creditCardId])
+}
+
+/// A general (non-category) card perk (lounge access, credits, insurance, etc.).
+model CardPerk {
+  id           String     @id @default(cuid())
+  creditCard   CreditCard @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+  creditCardId String
+  title        String // "Amex Gold $120 dining credit", "Priority Pass lounge access"
+  description  String?
+  order        Int        @default(0)
+
+  @@index([creditCardId])
+}
+
+model CardNumber {
+  id           String     @id @default(cuid())
+  creditCard   CreditCard @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+  creditCardId String
+  last4        String
+  validFrom    DateTime?
+  validTo      DateTime?
+  isCurrent    Boolean    @default(true)
+  notes        String?
+
+  @@index([creditCardId])
+}
+
+model BrokerageAccount {
+  id           String         @id @default(cuid())
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  brokerage    String?
+  accountName  String?
+  accountType  String?
+  currentValue Decimal        @default(0) @db.Decimal(14, 2)
+  notes        String?
+  archived     Boolean        @default(false)
+  holdings     Holding[]
+  statements   FinStatement[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([userId, archived])
+}
+
+model Holding {
+  id                 String            @id @default(cuid())
+  // holdings now attach to a FinAccount of kind BROKERAGE (legacy brokerageAccount kept nullable)
+  finAccount         FinAccount?       @relation(fields: [finAccountId], references: [id], onDelete: Cascade)
+  finAccountId       String?
+  brokerageAccount   BrokerageAccount? @relation(fields: [brokerageAccountId], references: [id], onDelete: Cascade)
+  brokerageAccountId String?
+  symbol             String
+  shares             Decimal           @db.Decimal(14, 6)
+  costBasisPerShare  Decimal?          @db.Decimal(12, 4)
+  currentPrice       Decimal?          @db.Decimal(12, 4)
+  asOf               DateTime?
+
+  @@index([finAccountId])
+  @@index([brokerageAccountId])
+}
+
+model FinStatement {
+  id                        String            @id @default(cuid())
+  user                      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                    String
+  finAccount                FinAccount?       @relation(fields: [finAccountId], references: [id], onDelete: Cascade)
+  finAccountId              String?
+  creditCard                CreditCard?       @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+  creditCardId              String?
+  brokerageAccount          BrokerageAccount? @relation(fields: [brokerageAccountId], references: [id], onDelete: Cascade)
+  brokerageAccountId        String?
+  fileKey                   String
+  fileName                  String
+  fileSha256                String?
+  mimeType                  String?
+  fileSize                  Int?
+  periodStart               DateTime?
+  periodEnd                 DateTime?
+  endingBalance             Decimal?          @db.Decimal(14, 2)
+  extractedTransactionCount Int?
+  processingStatus          ProcessingStatus  @default(PENDING)
+  processedAt               DateTime?
+  aiExtractedAt             DateTime? // last time AI extraction ran on this statement
+  processingError           String?
+  rawExtraction             Json?
+  transactions              FinTransaction[]
+  createdAt                 DateTime          @default(now())
+
+  @@index([userId])
+  @@index([userId, fileSha256])
+}
+
+model FinTransaction {
+  id                 String             @id @default(cuid())
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String
+  finAccount         FinAccount?        @relation(fields: [finAccountId], references: [id], onDelete: Cascade)
+  finAccountId       String?
+  creditCard         CreditCard?        @relation(fields: [creditCardId], references: [id], onDelete: Cascade)
+  creditCardId       String?
+  statement          FinStatement?      @relation(fields: [statementId], references: [id], onDelete: SetNull)
+  statementId        String?
+  date               DateTime           @db.Date
+  amount             Decimal            @db.Decimal(14, 2) // negative = outflow
+  currency           String             @default("USD")
+  merchant           String?
+  rawDescription     String?
+  category           BudgetCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId         String?
+  pending            Boolean            @default(false)
+  source             TransactionSource  @default(MANUAL)
+  dedupHash          String?
+  plaidTransactionId String?            @unique
+  ///
+  /// Plaid personal_finance_category.primary or legacy category tag.
+  ///
+  plaidCategory      String?
+  notes              String?
+  receiptKey         String? // S3 object key of an attached receipt image
+  receiptFileName    String?
+  receiptMimeType    String?
+  splits             TransactionSplit[]
+  subscription       FinSubscription?   @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  subscriptionId     String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([userId, date])
+  @@index([finAccountId])
+  @@index([creditCardId])
+}
+
+/// One slice of a split transaction, allocating part of the amount to a category.
+/// The split amounts use the same sign convention as the parent transaction.
+model TransactionSplit {
+  id            String          @id @default(cuid())
+  transaction   FinTransaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+  category      BudgetCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId    String?
+  amount        Decimal         @db.Decimal(14, 2)
+  note          String?
+  createdAt     DateTime        @default(now())
+
+  @@index([transactionId])
+  @@index([categoryId])
+}
+
+/// Global FX rates to USD, refreshed from a public source. `rateToUsd` = USD per 1 unit.
+model ExchangeRate {
+  code      String   @id // ISO 4217 currency code, e.g. "EUR"
+  rateToUsd Decimal  @db.Decimal(18, 8)
+  asOf      DateTime
+}
+
+model BudgetCategory {
+  id            String             @id @default(cuid())
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  name          String
+  color         String? // utility color family name, shared by budget + transaction tags
+  parent        BudgetCategory?    @relation("BudgetHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  parentId      String?
+  children      BudgetCategory[]   @relation("BudgetHierarchy")
+  monthlyBudget Decimal?           @db.Decimal(12, 2)
+  transactions  FinTransaction[]
+  splits        TransactionSplit[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([userId, name])
+}
+
+model FinSubscription {
+  id           String              @id @default(cuid())
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  name         String?
+  merchant     String
+  cadence      SubscriptionCadence @default(MONTHLY)
+  amount       Decimal             @default(0) @db.Decimal(12, 2)
+  currency     String              @default("USD")
+  status       SubscriptionStatus  @default(ACTIVE)
+  startedOn    DateTime?
+  cancelledOn  DateTime?
+  nextChargeOn DateTime?
+  notes        String?
+  transactions FinTransaction[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([userId, status])
+}
+
+model IncomeStream {
+  id           String        @id @default(cuid())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  name         String
+  kind         String?
+  finAccount   FinAccount?   @relation(fields: [finAccountId], references: [id], onDelete: SetNull)
+  finAccountId String?
+  notes        String?
+  archived     Boolean       @default(false)
+  entries      IncomeEntry[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([userId, name])
+}
+
+model IncomeEntry {
+  id         String       @id @default(cuid())
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  stream     IncomeStream @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  streamId   String
+  amount     Decimal      @db.Decimal(14, 2)
+  currency   String       @default("USD")
+  receivedAt DateTime
+  source     String       @default("MANUAL")
+  notes      String?
+  createdAt  DateTime     @default(now())
+
+  @@index([streamId])
+}
+
+model NetWorthSnapshot {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  asOf        DateTime
+  assets      Decimal  @db.Decimal(16, 2)
+  liabilities Decimal  @db.Decimal(16, 2)
+  netWorth    Decimal  @db.Decimal(16, 2)
+  breakdown   Json?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, asOf])
+}
+
+model TaxDocument {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  taxYear     Int
+  kind        String?
+  description String?
+  fileKey     String?
+  fileName    String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, taxYear])
+}
+
+model Debt {
+  id                 String    @id @default(cuid())
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String
+  name               String
+  kind               String?
+  principalOriginal  Decimal?  @db.Decimal(14, 2)
+  principalRemaining Decimal?  @db.Decimal(14, 2)
+  apr                Decimal?  @db.Decimal(6, 3)
+  minimumPayment     Decimal?  @db.Decimal(12, 2)
+  payoffGoalDate     DateTime?
+  strategy           String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+enum CreditBureau {
+  EQUIFAX
+  EXPERIAN
+  TRANSUNION
+}
+
+model CreditScoreEntry {
+  id        String        @id @default(cuid())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  bureau    CreditBureau?
+  score     Int
+  scoreDate DateTime      @db.Date
+  notes     String?
+  createdAt DateTime      @default(now())
+
+  @@index([userId, scoreDate])
+}
+
+model FinancialGoal {
+  id            String    @id @default(cuid())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  title         String
+  targetAmount  Decimal?  @db.Decimal(14, 2)
+  currentAmount Decimal   @default(0) @db.Decimal(14, 2)
+  targetDate    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// ============================================================
+// Social
+// ============================================================
+
+model SocialContact {
+  id                     String    @id @default(cuid())
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                 String
+  displayName            String
+  firstName              String?
+  lastName               String?
+  nickname               String?
+  avatarKey              String?
+  relationshipType       String?
+  howWeMet               String?
+  birthday               DateTime?
+  occupation             String?
+  companyOrSchool        String?
+  hometown               String?
+  timezone               String?
+  pronouns               String?
+  status                 String?
+  interests              String?
+  notes                  String?
+  closenessScore         Int?
+  trustScore             Int?
+  communicationFrequency String?
+  energyTags             String[]  @default([])
+  innerCircle            Boolean   @default(false)
+  stayInTouch            Boolean   @default(false)
+  stayInTouchDays        Int?
+  preferredContactMethod String?
+  lastContactAt          DateTime?
+  active                 Boolean   @default(true)
+
+  emails             ContactEmail[]
+  phones             ContactPhone[]
+  handles            ContactHandle[]
+  addresses          ContactAddress[]
+  dates              ContactDate[]
+  contactNotes       ContactNote[]
+  reminders          ContactReminder[]
+  interactions       SocialInteraction[]
+  communications     CommunicationLog[]
+  memories           SocialMemory[]
+  gifts              SocialGift[]
+  conflicts          SocialConflict[]
+  tags               SocialTag[]         @relation("ContactTags")
+  connectionsA       SocialConnection[]  @relation("ConnectionContact1")
+  connectionsB       SocialConnection[]  @relation("ConnectionContact2")
+  eventAttendees     EventAttendee[]
+  outreachDrafts     OutreachDraft[]
+  recurringReminders RecurringReminder[]
+  ownedAccounts      FinAccount[]        @relation("FinAccountOwners")
+  ownedCards         CreditCard[]        @relation("CreditCardOwners")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, displayName])
+}
+
+model ContactEmail {
+  id        String        @id @default(cuid())
+  contact   SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  email     String
+  label     String        @default("Other")
+  isPrimary Boolean       @default(false)
+
+  @@index([contactId])
+}
+
+model ContactPhone {
+  id        String        @id @default(cuid())
+  contact   SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  phone     String
+  label     String        @default("Mobile")
+  isPrimary Boolean       @default(false)
+
+  @@index([contactId])
+}
+
+model ContactHandle {
+  id        String        @id @default(cuid())
+  contact   SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  platform  String
+  handle    String
+
+  @@index([contactId])
+}
+
+model ContactAddress {
+  id           String        @id @default(cuid())
+  contact      SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId    String
+  addressType  String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  country      String?
+
+  @@index([contactId])
+}
+
+model ContactDate {
+  id        String        @id @default(cuid())
+  contact   SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  dateType  String
+  dateValue DateTime      @db.Date
+
+  @@index([contactId])
+}
+
+model ContactNote {
+  id        String        @id @default(cuid())
+  contact   SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  noteType  String?
+  noteText  String
+  createdAt DateTime      @default(now())
+
+  @@index([contactId])
+}
+
+model ContactReminder {
+  id           String        @id @default(cuid())
+  contact      SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId    String
+  reminderType String?
+  scheduledFor DateTime
+  completed    Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+
+  @@index([contactId])
+}
+
+model SocialInteraction {
+  id              String        @id @default(cuid())
+  contact         SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId       String
+  interactionType String?
+  date            DateTime      @default(now())
+  notes           String?
+  createdAt       DateTime      @default(now())
+
+  @@index([contactId, date])
+}
+
+model CommunicationLog {
+  id        String        @id @default(cuid())
+  contact   SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  channel   String?
+  date      DateTime      @default(now())
+  notes     String?
+  sentiment String?
+  createdAt DateTime      @default(now())
+
+  @@index([contactId, date])
+}
+
+model SocialEvent {
+  id            String    @id @default(cuid())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  name          String
+  eventDate     DateTime?
+  location      String?
+  attendees     Json?
+  notes         String?
+  coverImageKey String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model SocialMemory {
+  id          String              @id @default(cuid())
+  contact     SocialContact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId   String
+  title       String?
+  description String
+  memoryDate  DateTime?
+  location    String?
+  mediaKeys   String[]            @default([]) // legacy
+  media       SocialMemoryMedia[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @default(now()) @updatedAt
+
+  @@index([contactId])
+}
+
+/// Photo/video (any type) attached to a memory — preview/download/edit/remove.
+model SocialMemoryMedia {
+  id        String       @id @default(cuid())
+  memory    SocialMemory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  memoryId  String
+  key       String // S3 object key
+  fileName  String
+  mimeType  String
+  sizeBytes Int?
+  createdAt DateTime     @default(now())
+
+  @@index([memoryId])
+}
+
+model SocialGift {
+  id              String        @id @default(cuid())
+  contact         SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId       String
+  giftDescription String
+  givenDate       DateTime?
+  occasion        String?
+  direction       String? // given | received
+  createdAt       DateTime      @default(now())
+
+  @@index([contactId])
+}
+
+model SocialBattery {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  date        DateTime @db.Date
+  energyLevel Int
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+model SocialConflict {
+  id          String        @id @default(cuid())
+  contact     SocialContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId   String
+  date        DateTime?
+  description String
+  resolution  String?
+  createdAt   DateTime      @default(now())
+
+  @@index([contactId])
+}
+
+model SocialTag {
+  id       String          @id @default(cuid())
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  name     String
+  color    String?
+  contacts SocialContact[] @relation("ContactTags")
+
+  @@unique([userId, name])
+}
+
+/// Drafted outreach message (text/DM/email) with an optional send-by deadline.
+model OutreachDraft {
+  id        String         @id @default(cuid())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  contact   SocialContact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId String?
+  channel   String? // text | email | dm | call...
+  body      String
+  dueAt     DateTime? // send-by deadline (e.g. +1d, +7d, +30d)
+  sentAt    DateTime?
+  archived  Boolean        @default(false)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([userId, dueAt])
+}
+
+model SocialConnection {
+  id               String        @id @default(cuid())
+  contact1         SocialContact @relation("ConnectionContact1", fields: [contact1Id], references: [id], onDelete: Cascade)
+  contact1Id       String
+  contact2         SocialContact @relation("ConnectionContact2", fields: [contact2Id], references: [id], onDelete: Cascade)
+  contact2Id       String
+  relationshipType String?
+  notes            String?
+  createdAt        DateTime      @default(now())
+
+  @@index([contact1Id])
+  @@index([contact2Id])
+}
+
+// ============================================================
+// Learning
+// ============================================================
+
+model LearningCourse {
+  id                   String           @id @default(cuid())
+  user                 User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId               String
+  title                String
+  source               String? // free-text origin label (legacy)
+  provider             String? // youtube | udemy | coursera | other
+  url                  String?
+  thumbnailUrl         String?
+  description          String?
+  status               String? // planned | in_progress | completed
+  totalDurationSeconds Int?
+  timeInvestedMinutes  Int              @default(0)
+  rating               Int? // 1-5 personal rating after completion
+  review               String? // private notes
+  certificateKey       String? // S3 object key for an uploaded certificate
+  linkedGoal           LearningGoal?    @relation(fields: [linkedGoalId], references: [id], onDelete: SetNull)
+  linkedGoalId         String?
+  startedOn            DateTime?
+  completedOn          DateTime?
+  lessons              LearningLesson[]
+  quizzes              Quiz[]
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([linkedGoalId])
+}
+
+model LearningLesson {
+  id               String         @id @default(cuid())
+  course           LearningCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId         String
+  title            String
+  description      String?
+  completed        Boolean        @default(false)
+  estimatedMinutes Int?
+  order            Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([courseId])
+}
+
+model LearningGoal {
+  id            String             @id @default(cuid())
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  goalType      String?
+  title         String? // short label; description holds detail
+  description   String
+  color         String?
+  targetDate    DateTime?
+  completed     Boolean            @default(false)
+  streakCount   Int                @default(0)
+  lastStudiedOn DateTime?          @db.Date
+  freezeTokens  Int                @default(0)
+  milestones    GoalMilestone[]
+  resources     LearningResource[]
+  linkedCourses LearningCourse[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId])
+}
+
+model LearningSkill {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  name        String
+  proficiency Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model LearningResource {
+  id           String        @id @default(cuid())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  goal         LearningGoal? @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  goalId       String?
+  title        String
+  resourceType String? // link | video | book | note
+  url          String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+
+  @@index([userId])
+  @@index([goalId])
+}
+
+model Flashcard {
+  id             String    @id @default(cuid())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  front          String
+  back           String
+  reviewCount    Int       @default(0)
+  lastReviewedAt DateTime?
+  // SM-2 spaced-repetition scheduling
+  easeFactor     Float     @default(2.5)
+  intervalDays   Int       @default(0)
+  repetitions    Int       @default(0)
+  dueDate        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([userId, dueDate])
+}
+
+model Quiz {
+  id          String          @id @default(cuid())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  course      LearningCourse? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  courseId    String?
+  title       String
+  description String?
+  topic       String?
+  aiGenerated Boolean         @default(false)
+  aiTeach     Boolean         @default(false) // "AI quiz and teach" — AI augments questions + explanations
+  links       Json? // refs to linked flashcard/note ids: { flashcardIds: [], noteIds: [] }
+  questions   QuizQuestion[]
+  attempts    QuizAttempt[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([userId])
+}
+
+/// Quiz question with rich markdown content (code blocks, links, quotes, images/diagrams).
+model QuizQuestion {
+  id          String   @id @default(cuid())
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quizId      String
+  order       Int      @default(0)
+  prompt      String // markdown
+  choices     Json // [{ text: string (markdown), correct: boolean }]
+  explanation String? // markdown — shown after answering ("teach" mode)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([quizId, order])
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quizId    String
+  score     Float?
+  answers   Json? // per-question selections
+  createdAt DateTime @default(now())
+
+  @@index([quizId])
+}
+
+model LearningNote {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  title     String
+  content   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model LearningSession {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  sessionDate     DateTime @db.Date
+  durationMinutes Int?
+  notes           String?
+  subject         String?
+  // Lightweight attribution (nullable scalar refs, no FK cascade needed).
+  courseId        String?
+  classId         String?
+  goalId          String?
+  energy          Int? // 1-5 mood/energy rating
+  pomodoro        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@index([userId, sessionDate])
+}
+
+model LearningPlanEntry {
+  id           String    @id @default(cuid())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  title        String
+  scheduledFor DateTime?
+  completed    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model LearningAchievement {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  achievementType String
+  title           String?
+  earnedOn        DateTime @db.Date
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ── Academic mode ────────────────────────────────────────────
+
+enum GradeLevel {
+  HIGH_SCHOOL
+  UNDERGRAD
+  GRAD
+}
+
+enum ClassStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}
+
+enum HomeworkStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+}
+
+enum MilestoneStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  DONE
+}
+
+enum WatchStatus {
+  NOT_WATCHED
+  WATCHING
+  WATCHED
+}
+
+/// An academic class with a configurable weighted grade tracker.
+model LearningClass {
+  id           String            @id @default(cuid())
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  name         String
+  gradeLevel   GradeLevel        @default(UNDERGRAD)
+  creditHours  Float?
+  term         String? // e.g. "Fall 2026"
+  instructor   String?
+  color        String?
+  status       ClassStatus       @default(ACTIVE)
+  gradeWeights Json? // [{ name: string, weight: number }] — should sum to 100
+  absenceLimit Int? // e.g. 3 = dropped after 3 absences
+  finalGrade   Float? // locked final percent when completed
+  assignments  ClassAssignment[]
+  tests        ClassTest[]
+  absences     ClassAbsence[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([userId])
+}
+
+/// Homework / assignment tracked against a class's weighted categories.
+model ClassAssignment {
+  id             String         @id @default(cuid())
+  class          LearningClass  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId        String
+  title          String
+  category       String? // matches a gradeWeights[].name bucket
+  dueDate        DateTime?
+  status         HomeworkStatus @default(NOT_STARTED)
+  pointsEarned   Float?
+  pointsPossible Float?
+  extraCredit    Boolean        @default(false)
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([classId])
+}
+
+/// Test / quiz log entry with optional curve adjustment.
+model ClassTest {
+  id              String        @id @default(cuid())
+  class           LearningClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId         String
+  title           String
+  category        String?
+  date            DateTime?
+  score           Float?
+  maxScore        Float?
+  curveAdjustment Float?        @default(0) // points added to the raw score
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([classId])
+}
+
+/// A single absence entry for a class (attendance log).
+model ClassAbsence {
+  id        String        @id @default(cuid())
+  class     LearningClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId   String
+  date      DateTime      @db.Date
+  reason    String?
+  excused   Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  @@index([classId])
+}
+
+// ── Goal-Based mode ──────────────────────────────────────────
+
+/// A milestone breaking a learning goal into trackable steps.
+model GoalMilestone {
+  id        String          @id @default(cuid())
+  goal      LearningGoal    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  goalId    String
+  title     String
+  dueDate   DateTime?
+  status    MilestoneStatus @default(NOT_STARTED)
+  order     Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([goalId])
+}
+
+// ── YouTube Video Archive ────────────────────────────────────
+
+/// An AI-generated thematic group of archived videos with a collage cover.
+model VideoGroup {
+  id         String         @id @default(cuid())
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  name       String
+  themeColor String?
+  coverKey   String? // S3 object key for the 2x2 collage cover
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  videos     ArchiveVideo[]
+
+  @@index([userId])
+}
+
+/// A single archived YouTube video.
+model ArchiveVideo {
+  id              String      @id @default(cuid())
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  group           VideoGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  groupId         String?
+  youtubeId       String
+  url             String
+  title           String
+  channel         String?
+  thumbnailUrl    String?
+  durationSeconds Int? // manual (oEmbed does not expose duration)
+  watchStatus     WatchStatus @default(NOT_WATCHED)
+  watchProgress   Int         @default(0) // 0-100
+  notes           String?
+  addedAt         DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+
+  @@unique([userId, youtubeId])
+  @@index([userId])
+  @@index([groupId])
+}
+
+/// A public, view-only share link for a note or the user's flashcard deck.
+model LearningShare {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  token     String   @unique
+  kind      String // "note" | "deck"
+  noteId    String? // set when kind = "note"
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ============================================================
+// Focus & life engine
+// ============================================================
+
+model FocusSprint {
+  id              String    @id @default(cuid())
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  title           String
+  durationMinutes Int?
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  completed       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model WeeklyPriority {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  weekOf       DateTime @db.Date
+  priorityText String
+  order        Int      @default(0)
+  completed    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, weekOf])
+}
+
+model RewardGoal {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  description String
+  points      Int      @default(0)
+  earned      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model GoalPeriod {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  periodName String
+  startDate  DateTime @db.Date
+  endDate    DateTime @db.Date
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+}

@@ -1,0 +1,15 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "rootDir": "."
+    },
+    "include": [
+        "scripts/agent-canvas-acceptance-smoke.ts",
+        "src/agents/store.ts",
+        "src/agents/pool.ts",
+        "src/lifeos/social-canvas.ts",
+        "src/orchestrator.ts",
+        "src/types.ts"
+    ]
+}

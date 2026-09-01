@@ -1,0 +1,2 @@
+ALTER TABLE "FoodProduct"
+ADD COLUMN "fiberG" DOUBLE PRECISION;

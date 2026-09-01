@@ -1,0 +1,111 @@
+name: lifeos
+
+# Local development stack. Every published port is loopback-only; put a
+# separately hardened reverse proxy in front of production deployments.
+
+services:
+  db:
+    image: postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+    container_name: lifeos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lifeos
+      POSTGRES_PASSWORD: lifeos
+      POSTGRES_DB: lifeos
+    ports:
+      - "127.0.0.1:5450:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeos -d lifeos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    container_name: lifeos-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "127.0.0.1:9400:9000"
+      - "127.0.0.1:9401:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-setup:
+    image: minio/mc:latest@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    container_name: lifeos-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/lifeos &&
+      exit 0
+      "
+
+  redis:
+    image: redis:7@sha256:71da9275c5f3fcb97d0fa0c8c5b36cc995327265420f17a04bfd544f458059f7
+    container_name: lifeos-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "127.0.0.1:6390:6379"
+    volumes:
+      - redisdata:/data
+
+  migrate:
+    build:
+      context: .
+      target: build
+    container_name: lifeos-migrate
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run secrets:encrypt"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://lifeos:lifeos@db:5432/lifeos?schema=public
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-}
+
+  app:
+    build: .
+    container_name: lifeos-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://lifeos:lifeos@db:5432/lifeos?schema=public
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: http://localhost:9400
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: lifeos
+      REDIS_URL: redis://redis:6379
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3200}
+      # The application rejects an empty or known placeholder value in production.
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      # Required before connecting Plaid, Spotify, Genius, or Alpaca.
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "127.0.0.1:3200:3000"
+
+volumes:
+  pgdata:
+  miniodata:
+  redisdata:

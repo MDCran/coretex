@@ -1,0 +1,7 @@
+ALTER TABLE "FinAccount"
+    ADD COLUMN IF NOT EXISTS "openedAt" DATE,
+    ADD COLUMN IF NOT EXISTS "closedAt" DATE;
+
+ALTER TABLE "CreditCard"
+    ADD COLUMN IF NOT EXISTS "openedAt" DATE,
+    ADD COLUMN IF NOT EXISTS "closedAt" DATE;

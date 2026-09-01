@@ -1,0 +1,108 @@
+name: coretex-database-smoke
+
+# Disposable, localhost-only fixtures for database-acceptance-smoke.ts.
+# Every data directory is a tmpfs and disappears with `docker compose down`.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: coretex_smoke
+      POSTGRES_USER: coretex
+      POSTGRES_PASSWORD: coretex-smoke
+    ports:
+      - "127.0.0.1:55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./postgres.sql:/docker-entrypoint-initdb.d/10-coretex-smoke.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coretex -d coretex_smoke"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: coretex_smoke
+      MYSQL_USER: coretex
+      MYSQL_PASSWORD: coretex-smoke
+      MYSQL_ROOT_PASSWORD: coretex-smoke-root
+    ports:
+      - "127.0.0.1:53306:3306"
+    tmpfs:
+      - /var/lib/mysql
+    volumes:
+      - ./mysql.sql:/docker-entrypoint-initdb.d/10-coretex-smoke.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -ucoretex -pcoretex-smoke --silent"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+
+  mariadb:
+    image: mariadb:11.8
+    environment:
+      MARIADB_DATABASE: coretex_smoke
+      MARIADB_USER: coretex
+      MARIADB_PASSWORD: coretex-smoke
+      MARIADB_ROOT_PASSWORD: coretex-smoke-root
+    ports:
+      - "127.0.0.1:53307:3306"
+    tmpfs:
+      - /var/lib/mysql
+    volumes:
+      - ./mysql.sql:/docker-entrypoint-initdb.d/10-coretex-smoke.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "healthcheck.sh --connect --innodb_initialized"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+
+  mongo:
+    image: mongo:8
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: coretex-smoke-root
+    ports:
+      - "127.0.0.1:57017:27017"
+    tmpfs:
+      - /data/db
+    volumes:
+      - ./mongo.js:/docker-entrypoint-initdb.d/10-coretex-smoke.js:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet --username root --password coretex-smoke-root --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\"",
+        ]
+      interval: 2s
+      timeout: 4s
+      retries: 45
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "no", "--save", "", "--requirepass", "coretex-smoke"]
+    ports:
+      - "127.0.0.1:56379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=coretex-smoke redis-cli ping | grep PONG"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis-seed:
+    image: redis:8-alpine
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDISCLI_AUTH: coretex-smoke
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        redis-cli -h redis SET smoke:string ready &&
+        redis-cli -h redis HSET smoke:hash engine redis mode readonly &&
+        redis-cli -h redis RPUSH smoke:list alpha beta gamma &&
+        redis-cli -h redis ZADD smoke:zset 1 alpha 2 beta
+    restart: "no"

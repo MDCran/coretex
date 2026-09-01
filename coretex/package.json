@@ -1,0 +1,107 @@
+{
+    "name": "@repo/coretex",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Coretex — Multi-Agent AI Orchestrator (Desktop Brain)",
+    "type": "module",
+    "main": "dist/orchestrator.js",
+    "types": "dist/orchestrator.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/orchestrator.d.ts",
+            "import": "./dist/orchestrator.js"
+        },
+        "./types": {
+            "types": "./dist/types.d.ts",
+            "import": "./dist/types.js"
+        },
+        "./client": {
+            "types": "./dist/bridge/client.d.ts",
+            "import": "./dist/bridge/client.js"
+        },
+        "./orchestrator": {
+            "types": "./dist/orchestrator.d.ts",
+            "import": "./dist/orchestrator.js"
+        },
+        "./browser-url": {
+            "types": "./dist/browser/url.d.ts",
+            "import": "./dist/browser/url.js"
+        }
+    },
+    "scripts": {
+        "db:generate": "prisma generate",
+        "prebuild": "npm run db:generate",
+        "build": "tsc",
+        "db:ensure": "node scripts/ensure-lifeos-db.mjs",
+        "secrets:encrypt": "tsx scripts/encrypt-sensitive-tokens.ts",
+        "predev": "npm run db:ensure",
+        "dev": "tsx watch --clear-screen=false src/main.ts --desktop-dev",
+        "predev:compiled": "npm run db:ensure",
+        "dev:compiled": "tsc && node dist/main.js",
+        "predev:tsx": "npm run db:ensure",
+        "dev:tsx": "tsx src/main.ts",
+        "start": "node dist/main.js",
+        "precheck": "npm run db:generate",
+        "check": "tsc --noEmit",
+        "smoke:lifeos": "node scripts/lifeos-smoke.mjs",
+        "smoke:lifeos:mutations": "node scripts/lifeos-mutation-smoke.mjs",
+        "smoke:health": "node scripts/health-smoke.mjs",
+        "smoke:settings-wiring": "tsx scripts/settings-wiring-smoke.ts",
+        "smoke:security-privacy": "tsx scripts/security-privacy-smoke.ts",
+        "smoke:integration-secrets": "tsx scripts/integration-secret-box-smoke.ts",
+        "smoke:bridge-auth": "tsx scripts/bridge-auth-smoke.ts",
+        "smoke:bridge-client": "tsx scripts/bridge-client-lifecycle-smoke.ts",
+        "smoke:email": "tsx scripts/email-wiring-smoke.ts",
+        "smoke:database": "tsx scripts/database-acceptance-smoke.ts",
+        "smoke:docker": "tsx scripts/docker-acceptance-smoke.ts",
+        "check:docker-smoke": "tsc -p tsconfig.docker-smoke.json",
+        "smoke:terminal": "tsx scripts/terminal-regression-smoke.ts",
+        "smoke:security-terminal": "tsx scripts/security-terminal-policy-smoke.ts",
+        "check:terminal-smoke": "tsc -p tsconfig.terminal-smoke.json",
+        "smoke:calendar": "tsx scripts/calendar-acceptance-smoke.ts",
+        "check:calendar-smoke": "tsc -p tsconfig.calendar-smoke.json",
+        "smoke:agent-canvas": "tsx scripts/agent-canvas-acceptance-smoke.ts",
+        "check:agent-canvas-smoke": "tsc -p tsconfig.agent-canvas-smoke.json",
+        "smoke:connectors": "tsx scripts/connectors-acceptance-smoke.ts",
+        "smoke:codex-app-server": "tsx scripts/codex-app-server-smoke.ts",
+        "smoke:project-repos": "tsx scripts/project-repository-links-smoke.ts",
+        "smoke:github-workspace": "tsx scripts/github-workspace-smoke.ts",
+        "smoke:browser-url": "tsx scripts/browser-url-smoke.ts"
+    },
+    "dependencies": {
+        "@anthropic-ai/claude-agent-sdk": "^0.3.177",
+        "@prisma/client": "^5.22.0",
+        "adm-zip": "^0.6.0",
+        "basic-ftp": "^5.3.1",
+        "chokidar": "^5.0.0",
+        "dockerode": "^5.0.0",
+        "eventemitter3": "^5.0.1",
+        "ffmpeg-static": "^5.3.0",
+        "ignore": "^7.0.5",
+        "imapflow": "^1.4.7",
+        "mailparser": "^3.9.14",
+        "mongodb": "^7.3.0",
+        "mysql2": "^3.22.5",
+        "node-pty": "^1.1.0",
+        "nodemailer": "^9.0.3",
+        "pdf-to-img": "^5.0.0",
+        "pg": "^8.21.0",
+        "sql.js": "^1.14.1",
+        "ws": "^8.17.0",
+        "zod": "^4.4.3"
+    },
+    "devDependencies": {
+        "@types/adm-zip": "^0.5.8",
+        "@types/dockerode": "^4.0.1",
+        "@types/mailparser": "^3.4.6",
+        "@types/node": "^25.5.0",
+        "@types/nodemailer": "^8.0.1",
+        "@types/pg": "^8.20.0",
+        "@types/sql.js": "^1.4.11",
+        "@types/ssh2": "^1.15.5",
+        "@types/ws": "^8.5.10",
+        "prisma": "^5.22.0",
+        "tsx": "^4.19.2",
+        "typescript": "^5.9.3"
+    }
+}

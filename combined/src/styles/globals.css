@@ -1,0 +1,223 @@
+@import "tailwindcss";
+@import "./theme.css";
+@import "./typography.css";
+
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-react-aria-components";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+@custom-variant label (& [data-label]);
+@custom-variant focus-input-within (&:has(input:focus));
+
+/* Mobile-first page shell — extra bottom padding clears floating widgets on phones. */
+.page-shell {
+    min-width: 0;
+    padding: 0.75rem;
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 640px) {
+    .page-shell {
+        padding: 1.5rem 1.25rem;
+        padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* Edge-to-edge split layouts (music / workouts on phone). */
+.page-shell--immersive {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-top: 0.5rem;
+}
+
+@media (min-width: 640px) {
+    .page-shell--immersive {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        padding-top: 0.75rem;
+    }
+}
+
+@media (min-width: 1280px) {
+    .page-shell--immersive {
+        padding: 2rem;
+        padding-bottom: 2rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .page-shell {
+        padding: 2rem;
+        padding-bottom: 2rem;
+    }
+}
+
+.module-title {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+@media (min-width: 640px) {
+    .module-title {
+        font-size: var(--text-display-xs);
+        line-height: var(--text-display-xs--line-height);
+    }
+}
+
+/* Mobile split panes for music + workouts */
+.mobile-split-viewport {
+    height: calc(100dvh - 8.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    min-height: 22rem;
+}
+
+.mobile-workout-split {
+    height: calc(100dvh - 11.5rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    min-height: 18rem;
+}
+
+.mobile-workout-music-dock {
+    height: min(42dvh, 22rem);
+    min-height: 16rem;
+}
+
+@media (min-width: 1280px) {
+    .mobile-split-viewport,
+    .mobile-workout-split,
+    .mobile-workout-music-dock {
+        height: auto;
+        min-height: 0;
+    }
+}
+
+@utility safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+@utility safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Touch-friendly horizontal tab bar (music, library, module sub-nav). */
+.mobile-tab-bar {
+    display: flex;
+    gap: 0.125rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.mobile-tab-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.mobile-tab-bar > * {
+    min-height: 2.75rem;
+    flex: 1 0 auto;
+    min-width: 4.5rem;
+}
+
+@utility scrollbar-hide {
+    /* For Webkit-based browsers (Chrome, Safari and Opera) */
+    &::-webkit-scrollbar {
+        display: none;
+        -webkit-appearance: none;
+    }
+
+    /* For IE, Edge and Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+@utility transition-inherit-all {
+    transition-property: inherit;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
+}
+
+/* Browsers (Edge/IE) inject their own password-reveal eye, duplicating the UI toggle. */
+input::-ms-reveal,
+input::-ms-clear {
+    display: none;
+}
+
+html,
+body {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-variant-ligatures: contextual;
+    font-variant-ligatures: contextual;
+    -webkit-font-kerning: normal;
+    font-kerning: normal;
+}
+
+/* Hide the default expand arrow on Safari.  */
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+@layer components {
+    /* Financial tables use direct <tr> borders; keep them token-colored and gapless. */
+    .financial-area table {
+        border-collapse: collapse;
+        border-spacing: 0;
+        background-color: transparent;
+    }
+
+    .financial-area table :where(thead, tbody, tr, th, td) {
+        border-color: var(--color-border-secondary);
+    }
+
+    .financial-area table :where(th, td) {
+        background-clip: padding-box;
+    }
+}
+
+/* Hide default arrows from number inputs. */
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+/* Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Hide the default clear button (X) from search inputs. */
+input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+}
+
+/* Hide the default outline on chart elements. */
+.recharts-surface,
+.recharts-surface g,
+.recharts-surface path {
+    outline: none;
+}
+
+/*
+ * Tailwind v4's preflight resets interactive elements to `cursor: default`.
+ * Restore the expected pointer affordance app-wide so every custom clickable
+ * element "feels clickable". Tailwind `cursor-*` utilities live in a later
+ * cascade layer and still win where an element opts into a different cursor
+ * (e.g. the before/after photo slider's `cursor-ew-resize`).
+ */
+@layer base {
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]),
+    summary,
+    label:has(> input[type="file"]) {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    [role="button"][aria-disabled="true"] {
+        cursor: default;
+    }
+}

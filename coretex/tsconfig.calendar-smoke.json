@@ -1,0 +1,24 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "rootDir": "..",
+        "baseUrl": "..",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "paths": {
+            "@repo/coretex/types": ["coretex/src/types.ts"]
+        }
+    },
+    "include": [
+        "scripts/calendar-acceptance-smoke.ts",
+        "src/calendar/store.ts",
+        "src/calendar/unified-feed.ts",
+        "src/lifeos/calendar.ts",
+        "src/lifeos/personal-calendar.ts",
+        "src/types.ts",
+        "../shared/src/coretex/calendar/categories.ts",
+        "../shared/src/coretex/calendar/event-draft.ts",
+        "../shared/src/coretex/calendar/calendar-data.ts"
+    ]
+}
