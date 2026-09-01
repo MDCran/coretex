@@ -15,6 +15,29 @@
 
 Coretex brings the tools used to run work and life into one focused Windows desktop app. It combines agent orchestration, project planning, communication, local infrastructure, and personal tracking behind a responsive React interface.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/coretex-home.jpg" alt="Coretex home workspace showing agents, provider health, usage, and projects" width="1200">
+</p>
+
+<p align="center"><sub>Home workspace — agents, providers, projects, usage, and infrastructure at a glance.</sub></p>
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/coretex-workouts.jpg" alt="Coretex workout overview showing today's scheduled workout and progress metrics">
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/coretex-workout-templates.jpg" alt="Coretex workout template gallery showing reusable training plans">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Today’s workout, scheduling controls, and progress metrics.</sub></td>
+    <td align="center"><sub>Reusable strength and cardio templates with programmed exercises.</sub></td>
+  </tr>
+</table>
+
 ## Highlights
 
 - Orchestrate AI agents, councils, plans, tasks, and projects.
