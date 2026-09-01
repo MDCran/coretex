@@ -125,24 +125,39 @@ jobs:
         working-directory: combined
         run: npm run db:deploy
 
+      - name: Verify the deployed schema matches Prisma
+        working-directory: combined
+        run: >-
+          npx prisma migrate diff --exit-code
+          --from-url "$DATABASE_URL"
+          --to-schema-datamodel prisma/schema.prisma
+
       - name: Render every authenticated standalone route
         working-directory: combined
         run: |
-          PORT=3200 npm run start > "$RUNNER_TEMP/coretex-standalone.log" 2>&1 &
+          log_file="$RUNNER_TEMP/coretex-standalone.log"
+          PORT=3200 npm run start > "$log_file" 2>&1 &
           server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          cleanup() {
+            exit_code=$?
+            trap - EXIT
+            kill "$server_pid" 2>/dev/null || true
+            if [ "$exit_code" -ne 0 ]; then
+              echo "::group::Standalone server log"
+              cat "$log_file" || true
+              echo "::endgroup::"
+            fi
+            exit "$exit_code"
+          }
+          trap cleanup EXIT
           for attempt in {1..30}; do
             if curl --fail --silent http://127.0.0.1:3200/api/version > /dev/null; then
               break
             fi
             if ! kill -0 "$server_pid" 2>/dev/null; then
-              cat "$RUNNER_TEMP/coretex-standalone.log"
               exit 1
             fi
             sleep 1
           done
-          curl --fail --silent http://127.0.0.1:3200/api/version > /dev/null || {
-            cat "$RUNNER_TEMP/coretex-standalone.log"
-            exit 1
-          }
+          curl --fail --silent http://127.0.0.1:3200/api/version > /dev/null
           npm run smoke:routes -- http://127.0.0.1:3200
