@@ -104,7 +104,7 @@
         "@tailwindcss/typography": "^0.5.19",
         "@tailwindcss/vite": "^4.2.2",
         "@teispace/next-themes": "^2.0.4",
-        "@tiptap/core": "^3.26.1",
+        "@tiptap/core": "^3.30.4",
         "@tiptap/extension-image": "^3.26.1",
         "@tiptap/extension-placeholder": "^3.26.1",
         "@tiptap/extension-text-align": "^3.26.1",
