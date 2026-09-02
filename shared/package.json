@@ -6,7 +6,7 @@
         "@react-aria/utils": "*",
         "@react-stately/utils": "*",
         "@repo/coretex": "*",
-        "@tiptap/core": "*",
+        "@tiptap/core": "^3.26.1",
         "@tiptap/extension-image": "*",
         "@tiptap/extension-placeholder": "*",
         "@tiptap/extension-text-align": "*",
