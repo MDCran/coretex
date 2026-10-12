@@ -57,6 +57,14 @@ Coretex brings the tools used to run work and life into one focused Windows desk
 | `combined` | Standalone LifeOS web app and its isolated Docker stack |
 | `scripts` | Build, verification, security, and release tooling |
 
+## Code review starting points
+
+- [coretex/src](coretex/src): Brain service and integrations
+- [shared/src](shared/src): application views shared by the clients
+- [apps/desktop](apps/desktop): Electron shell, desktop UI, and packaging
+- [scripts](scripts): release-contract and verification tooling
+- [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md): bundled dependency and asset notices
+
 ## Requirements
 
 - Windows 10 or later
@@ -105,6 +113,17 @@ npm audit
 ```
 
 See [SECURITY.md](SECURITY.md) for the security policy and [apps/desktop/README.md](apps/desktop/README.md) for Windows packaging and update details.
+
+## Automated verification
+
+The badges above link to the actual workflow histories:
+
+- [Security checks](.github/workflows/security.yml) scans Git history with Gitleaks, audits both lockfiles at the low-severity threshold, runs security and release-contract smoke checks, and builds the workspaces.
+- Its quality job also type-checks and tests the standalone app, verifies the database schema, and runs authenticated-route smoke checks against a CI database.
+- [CodeQL](.github/workflows/codeql.yml) analyzes JavaScript and TypeScript and runs a repository check that requires zero reported findings.
+- [Windows release verification](.github/workflows/release-windows.yml) validates packaging and update metadata; publication also requires a valid Authenticode signature.
+
+These are the checks configured in source. Read the result for the exact commit being reviewed; workflow badges do not establish that every integration has been exercised or that the application is vulnerability-free.
 
 ## Releases
 
