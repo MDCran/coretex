@@ -148,7 +148,7 @@
         "prettier-plugin-tailwindcss": "^0.7.2",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.53.1",
-        "vite": "^8.0.2",
+        "vite": "^8.1.6",
         "vite-plugin-electron": "^1.0.4",
         "vite-plugin-electron-renderer": "^1.0.0"
     },
